@@ -1,0 +1,132 @@
+name: logicflower
+
+services:
+  mongo:
+    image: mongo:8.0
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all", "--port", "27017"]
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 10s
+
+  mongo-init:
+    image: mongo:8.0
+    depends_on:
+      mongo:
+        condition: service_healthy
+    restart: "no"
+    entrypoint:
+      - bash
+      - -ec
+      - |
+        mongosh --host mongo:27017 --quiet --eval '
+          try { rs.status() }
+          catch (error) { rs.initiate({_id:"rs0",members:[{_id:0,host:"mongo:27017"}]}) }
+        '
+
+  redis:
+    image: redis:7.4-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory-policy", "noeviction"]
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  mailpit:
+    image: axllent/mailpit:v1.21
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8025:8025"
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: "1"
+      MP_SMTP_AUTH_ALLOW_INSECURE: "1"
+
+  api:
+    build:
+      context: ./server
+      target: runtime
+    restart: unless-stopped
+    env_file:
+      - ./server/.env
+    environment:
+      MONGO_URI: mongodb://mongo:27017/logicflower?replicaSet=rs0
+      REDIS_URL: redis://redis:6379
+      APP_URL: http://localhost:8080
+      API_URL: http://localhost:8080
+      CORS_ORIGINS: http://localhost:8080
+      GHL_REDIRECT_URI: http://localhost:8080/api/v1/connections/ghl/oauth/callback
+      HUBSPOT_REDIRECT_URI: http://localhost:8080/api/v1/connections/hubspot/oauth/callback
+      KLAVIYO_REDIRECT_URI: http://localhost:8080/api/v1/connections/klaviyo/oauth/callback
+      GOOGLE_REDIRECT_URI: http://localhost:8080/api/v1/connections/google/oauth/callback
+      SMTP_HOST: mailpit
+      SMTP_PORT: "1025"
+      TRUST_PROXY: "1"
+      ARTIFACT_STORAGE_DRIVER: local
+      ARTIFACT_LOCAL_ROOT: /var/lib/logicflower/artifacts
+    volumes:
+      - artifact_data:/var/lib/logicflower/artifacts
+    depends_on:
+      mongo-init:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+    expose:
+      - "4000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4000/readyz').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  worker:
+    build:
+      context: ./server
+      target: runtime
+    restart: unless-stopped
+    command: ["node", "dist/src/queue/processor.js"]
+    env_file:
+      - ./server/.env
+    environment:
+      MONGO_URI: mongodb://mongo:27017/logicflower?replicaSet=rs0
+      REDIS_URL: redis://redis:6379
+      SMTP_HOST: mailpit
+      SMTP_PORT: "1025"
+      ARTIFACT_STORAGE_DRIVER: local
+      ARTIFACT_LOCAL_ROOT: /var/lib/logicflower/artifacts
+    volumes:
+      - artifact_data:/var/lib/logicflower/artifacts
+    depends_on:
+      api:
+        condition: service_healthy
+
+  web:
+    build:
+      context: ./client
+      args:
+        VITE_API_BASE: /api/v1
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  mongo_data:
+  redis_data:
+  artifact_data:

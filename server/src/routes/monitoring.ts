@@ -1,0 +1,16 @@
+import crypto from 'crypto';
+import { Router } from 'express';
+import Incident from '../models/Incident';
+import MonitoringRun from '../models/MonitoringRun';
+import { monitoringQueue } from '../queue';
+import { listMonitorableConnections } from '../services/monitoringService';
+import { requireOrganizationId, requestCorrelationId } from '../types/authenticatedRequest';
+import { HttpError } from '../http/problem';
+import { decodeCursor, encodeCursor, pageLimit } from '../http/cursor';
+const router = Router(); const asyncRoute = (fn: any) => (req: any, res: any, next: any) => Promise.resolve(fn(req, res, next)).catch(next);
+router.get('/health', asyncRoute(async (req: any, res: any) => { const organizationId = requireOrganizationId(req); const [connections, lastRuns, openIncidents] = await Promise.all([listMonitorableConnections(organizationId), MonitoringRun.find({ organizationId }).sort({ createdAt: -1 }).limit(20).lean(), Incident.countDocuments({ organizationId, status: { $ne: 'resolved' } })]); res.json({ connections, lastRuns, openIncidents }); }));
+router.post('/run', asyncRoute(async (req: any, res: any) => { const organizationId = requireOrganizationId(req); if (!req.body?.connectionId || !req.body?.provider) throw new HttpError(422, 'Connection required', 'connectionId and provider are required'); const correlationId = requestCorrelationId(req) || crypto.randomUUID(); await monitoringQueue.add('connection', { organizationId, connectionId: req.body.connectionId, provider: req.body.provider, correlationId }, { attempts: 1, removeOnComplete: 500, removeOnFail: 1_000 }); res.status(202).json({ queued: true, correlationId }); }));
+router.get('/incidents', asyncRoute(async (req: any, res: any) => { const limit = pageLimit(req.query.limit); const cursor = decodeCursor(req.query.cursor); const query: any = { organizationId: requireOrganizationId(req) }; if (req.query.status) query.status = String(req.query.status); if (cursor) query._id = { $lt: cursor }; const rows: any[] = await Incident.find(query).sort({ _id: -1 }).limit(limit + 1).lean(); const hasMore = rows.length > limit; res.json({ items: rows.slice(0, limit), nextCursor: hasMore ? encodeCursor(rows[limit - 1]._id) : null }); }));
+router.get('/incidents/:id', asyncRoute(async (req: any, res: any) => { const row = await Incident.findOne({ _id: req.params.id, organizationId: requireOrganizationId(req) }).lean(); if (!row) throw new HttpError(404, 'Incident not found', 'Incident not found'); res.json(row); }));
+router.patch('/incidents/:id', asyncRoute(async (req: any, res: any) => { const status = String(req.body?.status || ''); if (!['acknowledged', 'resolved'].includes(status)) throw new HttpError(422, 'Invalid incident status', 'Status must be acknowledged or resolved'); const row: any = await Incident.findOneAndUpdate({ _id: req.params.id, organizationId: requireOrganizationId(req) }, { $set: { status, ...(status === 'resolved' ? { resolvedAt: new Date() } : {}) } }, { new: true }); if (!row) throw new HttpError(404, 'Incident not found', 'Incident not found'); res.json(row); }));
+export default router;

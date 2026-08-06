@@ -1,0 +1,32 @@
+{
+  "name": "logicflower",
+  "version": "1.1.3",
+  "private": true,
+  "description": "LogicFlower multi-tenant workflow operations, monitoring and batch automation SaaS",
+  "engines": {
+    "node": ">=20 <25"
+  },
+  "scripts": {
+    "install:all": "npm install --prefix server && npm install --prefix client",
+    "dev": "concurrently -k -n api,web -c blue,green \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
+    "build": "npm run build --prefix server && npm run build --prefix client",
+    "typecheck": "npm run typecheck --prefix server && npm run typecheck --prefix client",
+    "lint": "npm run guardrails && npm run lint:security",
+    "test": "npm run test --prefix server && npm run test --prefix client",
+    "guardrails": "node scripts/repository-guardrails.mjs && node scripts/tenant-isolation-guard.mjs",
+    "verify": "npm run guardrails && npm run typecheck && npm run test && npm run build",
+    "bootstrap": "npm run bootstrap:dev --prefix server",
+    "migrate:tenancy": "npm run migrate:tenancy:dev --prefix server",
+    "secrets:generate": "node scripts/generate-secrets.mjs",
+    "lint:security": "eslint . --max-warnings=0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "concurrently": "^9.1.2",
+    "eslint": "^10.8.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-security": "^4.0.1",
+    "globals": "^17.9.0",
+    "typescript-eslint": "^8.66.0"
+  }
+}
