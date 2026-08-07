@@ -3,9 +3,11 @@ import axios from 'axios'
 import pino from '../logger'
 import User from '../models/User'
 
+import { authenticate } from '../middleware/authenticate'
+
 const router = Router()
 
-router.get('/sso', async (req, res, next) => {
+router.get('/sso', authenticate, async (req, res, next) => {
   try {
     const auth = (req as any).auth
     if (!auth || !auth.userId) {
@@ -27,6 +29,31 @@ router.get('/sso', async (req, res, next) => {
     res.json({ url: response.data.url })
   } catch (error) {
     pino.error({ error }, 'Failed to provision Trypost user')
+    next(error)
+  }
+})
+
+router.post('/verify', async (req, res, next) => {
+  try {
+    const { email, password, secret } = req.body
+    if (secret !== 'leadflower-secret-123') {
+      return res.status(401).json({ success: false })
+    }
+
+    const user: any = await User.findOne({ email }).select('+passwordHash')
+    if (!user || user.status !== 'active') {
+      return res.json({ success: false })
+    }
+
+    const bcrypt = require('bcryptjs')
+    const valid = await bcrypt.compare(password, user.passwordHash)
+    
+    if (valid) {
+      return res.json({ success: true, user: { email: user.email, name: user.displayName || 'User' } })
+    }
+    return res.json({ success: false })
+  } catch (error) {
+    pino.error({ error }, 'Failed to verify Trypost credentials')
     next(error)
   }
 })

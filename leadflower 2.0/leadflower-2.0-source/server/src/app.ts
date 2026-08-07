@@ -117,7 +117,7 @@ function mountApi(app: express.Express, prefix: '/api/v1' | '/api'): void {
   // the matched page.
   app.use(`${prefix}/public/booking`, publicBookingRouter)
   app.use(`${prefix}/social`, authenticate, csrfProtection, requireOrganization, tenantRateLimit, idempotentMutation, operationalViewer, mutationGate(operationalOperator), socialRoutes)
-  app.use(`${prefix}/trypost`, authenticate, tenantRateLimit, trypostRoutes)
+  app.use(`${prefix}/trypost`, tenantRateLimit, trypostRoutes)
   app.use(`${prefix}/voice`, authenticate, csrfProtection, requireOrganization, tenantRateLimit, idempotentMutation, operationalViewer, mutationGate(operationalOperator), voiceRoutes)
   // Unauthenticated by design: a review widget renders on a customer's own
   // website and a reviewer has no session. Rate limited, scoped by an
