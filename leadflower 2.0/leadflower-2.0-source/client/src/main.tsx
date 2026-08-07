@@ -26,6 +26,7 @@ const ContactsPage = React.lazy(() => import('./pages/ContactsPage'))
 const ContactDetailPage = React.lazy(() => import('./pages/ContactDetailPage'))
 const PipelinePage = React.lazy(() => import('./pages/PipelinePage'))
 const InboxPage = React.lazy(() => import('./pages/InboxPage'))
+const TrypostPage = React.lazy(() => import('./pages/TrypostPage'))
 const SocialPage = React.lazy(() => import('./pages/SocialPage'))
 const VoicePage = React.lazy(() => import('./pages/VoicePage'))
 const WorkflowBuilderPage = React.lazy(() => import('./pages/WorkflowBuilderPage'))
@@ -76,6 +77,7 @@ const router = createBrowserRouter([
         { path: '/contacts/:id', element: <ContactDetailPage /> },
         { path: '/pipeline', element: <PipelinePage /> },
         { path: '/inbox', element: <InboxPage /> },
+        { path: '/trypost', element: <TrypostPage /> },
         { path: '/social', element: <SocialPage /> },
         { path: '/voice', element: <VoicePage /> },
         { path: '/workflows', element: <WorkflowsPage /> },
