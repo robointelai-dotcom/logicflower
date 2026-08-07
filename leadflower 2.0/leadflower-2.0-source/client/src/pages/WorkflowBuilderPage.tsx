@@ -59,7 +59,14 @@ function SafeNode({ data, selected }: NodeProps<WorkflowNodeData>) {
 // kind. The server executes only the allow-listed `data.kind` value.
 const nodeTypes = { safeNode: SafeNode }
 
-function newId(prefix: string): string { return `${prefix.replace(/[^a-z]/g, '-')}-${crypto.randomUUID()}` }
+function newId(prefix: string): string {
+  const uuid = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0
+    const v = c === 'x' ? r : (r & 0x3) | 0x8
+    return v.toString(16)
+  })
+  return `${prefix.replace(/[^a-z]/g, '-')}-${uuid}`
+}
 
 function initialConfig(spec: NodeSpec): UnknownRecord {
   const config: UnknownRecord = {}
