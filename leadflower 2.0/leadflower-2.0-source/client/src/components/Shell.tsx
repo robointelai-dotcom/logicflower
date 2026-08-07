@@ -26,7 +26,7 @@ const sections: Array<{ label: string; items: NavItem[] }> = [
     { label: 'Pipeline', to: '/pipeline', icon: KanbanSquare, roles: ['owner', 'admin', 'operator', 'viewer'] },
     { label: 'Booking', to: '/booking', icon: CalendarClock, roles: ['owner', 'admin', 'operator', 'viewer'] },
     { label: 'Sequences', to: '/sequences', icon: Send, roles: ['owner', 'admin', 'operator', 'viewer'] },
-    { label: 'Social', to: '/social', icon: Megaphone, roles: ['owner', 'admin', 'operator', 'viewer'] },
+    { label: 'Social (Trypost)', to: 'http://139.99.134.4:8001', icon: Megaphone, roles: ['owner', 'admin', 'operator', 'viewer'] },
     { label: 'Calling', to: '/voice', icon: PhoneCall, roles: ['owner', 'admin', 'operator'] },
   ] },
   { label: 'Operate', items: [
@@ -86,7 +86,7 @@ export default function Shell() {
         {sections.map((section) => {
           const visible = section.items.filter((item) => !item.roles || item.roles.includes(role))
           if (!visible.length) return null
-          return <div className="nav-section" key={section.label}><p>{section.label}</p>{visible.map((item) => <NavLink key={item.to} to={item.to} end={item.to === '/dashboard'} className={({ isActive }) => isActive ? 'active' : ''}><item.icon size={18} aria-hidden="true" /><span>{item.label}</span></NavLink>)}</div>
+          return <div className="nav-section" key={section.label}><p>{section.label}</p>{visible.map((item) => item.to.startsWith('http') ? <a key={item.to} href={item.to} target="_blank" rel="noopener noreferrer"><item.icon size={18} aria-hidden="true" /><span>{item.label}</span></a> : <NavLink key={item.to} to={item.to} end={item.to === '/dashboard'} className={({ isActive }) => isActive ? 'active' : ''}><item.icon size={18} aria-hidden="true" /><span>{item.label}</span></NavLink>)}</div>
         })}
       </nav>
       {(['owner', 'admin'].includes(session?.user.platformRole ?? 'user') && session?.user.mfaEnabled) && (
