@@ -1,5 +1,4 @@
-name: logicflower
-
+version: '3.8'
 services:
   mongo:
     image: mongo:8.0
@@ -64,13 +63,13 @@ services:
     environment:
       MONGO_URI: mongodb://mongo:27017/logicflower?replicaSet=rs0
       REDIS_URL: redis://redis:6379
-      APP_URL: http://localhost:8080
-      API_URL: http://localhost:8080
-      CORS_ORIGINS: http://localhost:8080
-      GHL_REDIRECT_URI: http://localhost:8080/api/v1/connections/ghl/oauth/callback
-      HUBSPOT_REDIRECT_URI: http://localhost:8080/api/v1/connections/hubspot/oauth/callback
-      KLAVIYO_REDIRECT_URI: http://localhost:8080/api/v1/connections/klaviyo/oauth/callback
-      GOOGLE_REDIRECT_URI: http://localhost:8080/api/v1/connections/google/oauth/callback
+      APP_URL: http://139.99.134.4
+      API_URL: http://139.99.134.4
+      CORS_ORIGINS: http://139.99.134.4
+      GHL_REDIRECT_URI: http://139.99.134.4/api/v1/connections/ghl/oauth/callback
+      HUBSPOT_REDIRECT_URI: http://139.99.134.4/api/v1/connections/hubspot/oauth/callback
+      KLAVIYO_REDIRECT_URI: http://139.99.134.4/api/v1/connections/klaviyo/oauth/callback
+      GOOGLE_REDIRECT_URI: http://139.99.134.4/api/v1/connections/google/oauth/callback
       SMTP_HOST: mailpit
       SMTP_PORT: "1025"
       TRUST_PROXY: "1"
@@ -121,7 +120,7 @@ services:
         VITE_API_BASE: /api/v1
     restart: unless-stopped
     ports:
-      - "8080:8080"
+      - "80:8080"
     depends_on:
       api:
         condition: service_healthy
