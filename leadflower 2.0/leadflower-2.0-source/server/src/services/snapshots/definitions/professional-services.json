@@ -1,0 +1,84 @@
+{
+  "id": "professional_services",
+  "name": "Professional services",
+  "description": "Accountants, solicitors, consultants, agencies. Built around a longer consultative cycle where the proposal, not the quote, is the decision point.",
+  "version": 1,
+  "customFields": [
+    { "key": "service_line", "label": "Service line", "type": "single_select", "options": ["Advisory", "Compliance", "Implementation", "Retainer", "Other"] },
+    { "key": "company_size", "label": "Company size", "type": "single_select", "options": ["Sole trader", "2-10", "11-50", "51-250", "250+"] },
+    { "key": "engagement_type", "label": "Engagement type", "type": "single_select", "options": ["One-off project", "Retainer", "Hourly"] },
+    { "key": "estimated_fee", "label": "Estimated fee", "type": "number", "min": 0, "helpText": "In minor currency units." },
+    { "key": "decision_timeframe", "label": "Decision timeframe", "type": "single_select", "options": ["This month", "This quarter", "This year", "Exploring"] },
+    { "key": "renewal_date", "label": "Renewal date", "type": "date" },
+    { "key": "conflict_check_done", "label": "Conflict check completed", "type": "boolean" }
+  ],
+  "pipeline": {
+    "name": "Client pipeline",
+    "description": "Enquiry through to signed engagement.",
+    "stages": [
+      {
+        "name": "Enquiry",
+        "probability": 10,
+        "taskTemplates": [ { "title": "Respond to the enquiry", "dueInHours": 4, "priority": "high" } ]
+      },
+      {
+        "name": "Discovery call booked",
+        "probability": 25,
+        "taskTemplates": [ { "title": "Prepare for the discovery call", "dueInHours": 24, "priority": "normal" } ]
+      },
+      {
+        "name": "Proposal sent",
+        "probability": 50,
+        "taskTemplates": [
+          { "title": "Follow up on the proposal", "dueInHours": 72, "priority": "high" },
+          { "title": "Second follow-up if no response", "dueInHours": 240, "priority": "normal" }
+        ]
+      },
+      { "name": "Negotiating", "probability": 75 },
+      { "name": "Engaged", "outcome": "won", "probability": 100, "taskTemplates": [ { "title": "Send engagement letter and onboarding pack", "dueInHours": 24, "priority": "high" } ] },
+      { "name": "Not proceeding", "outcome": "lost", "probability": 0 }
+    ]
+  },
+  "sequences": [
+    {
+      "name": "Enquiry to discovery call",
+      "description": "Moves a new enquiry towards a booked conversation.",
+      "steps": [
+        { "channel": "email", "wait": { "kind": "duration", "minutes": 30 }, "subjectTemplate": "Thanks for your enquiry", "bodyTemplate": "Hi {{contact.firstName}},\n\nThank you for getting in touch. The most useful next step is usually a short call to understand what you are trying to achieve.\n\nReply with a couple of times that suit you and we will get it booked." },
+        { "channel": "email", "wait": { "kind": "duration", "minutes": 4320 }, "subjectTemplate": "Still happy to talk", "bodyTemplate": "Hi {{contact.firstName}},\n\nFollowing up on my note earlier this week. If now is not the right time, that is completely fine — just let me know and I will leave it there.\n\nOtherwise, send over a time that works and we will find a slot." }
+      ],
+      "quietHours": { "enabled": true, "startMinute": 1140, "endMinute": 480 }
+    },
+    {
+      "name": "Proposal follow-up",
+      "description": "Runs after a proposal is sent. Three touches over two weeks, ending with a clear close-out.",
+      "steps": [
+        { "channel": "email", "wait": { "kind": "duration", "minutes": 4320 }, "subjectTemplate": "Any questions on the proposal?", "bodyTemplate": "Hi {{contact.firstName}},\n\nJust checking whether you had any questions about the proposal.\n\nHappy to talk through the scope or adjust it if something does not fit." },
+        { "channel": "email", "wait": { "kind": "duration", "minutes": 10080 }, "subjectTemplate": "Checking in", "bodyTemplate": "Hi {{contact.firstName}},\n\nChecking in on the proposal. If priorities have shifted, no problem at all — it would just help to know either way." },
+        { "channel": "email", "wait": { "kind": "duration", "minutes": 10080 }, "subjectTemplate": "Closing this off for now", "bodyTemplate": "Hi {{contact.firstName}},\n\nI will close this off for now so it stops sitting in your inbox.\n\nIf it becomes relevant again, reply to this and we will pick it straight back up." }
+      ],
+      "quietHours": { "enabled": true, "startMinute": 1140, "endMinute": 480 }
+    }
+  ],
+  "forms": [
+    {
+      "name": "Enquiry",
+      "fields": [
+        { "field": "firstName", "label": "First name", "required": true },
+        { "field": "lastName", "label": "Last name", "required": true },
+        { "field": "email", "label": "Work email", "required": true },
+        { "field": "companyName", "label": "Company" },
+        { "field": "phone", "label": "Phone number" },
+        { "field": "custom:service_line", "label": "What can we help with?", "required": true },
+        { "field": "custom:decision_timeframe", "label": "What is your timeframe?" }
+      ],
+      "successMessage": "Thanks — we have your enquiry and will be in touch shortly.",
+      "consentText": "By submitting this form you agree that we may contact you by email and phone about your enquiry. You can ask us to stop at any time."
+    }
+  ],
+  "operatorNotes": [
+    "The Proposal follow-up sequence ends with an explicit close-out message rather than trailing off. It performs better than an indefinite chase and it is the more honest thing to send.",
+    "The conflict check field is a prompt, not a control. This system does not perform conflict checking and cannot block work on that basis.",
+    "All sequences are created as drafts. Review the wording in your own voice before activating."
+  ]
+}

@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    services:
+      mongo:
+        image: mongo:8.0
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.adminCommand(\"ping\").ok'"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+      redis:
+        image: redis:7.4-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+    env:
+      NODE_ENV: test
+      # Unit tests never open a connection. The integration suite provisions
+      # its own single-node replica set, because the usage ledger requires
+      # transactions and this service container is a standalone.
+      MONGO_URI: mongodb://127.0.0.1:27017/logicflower_test
+      REDIS_URL: redis://127.0.0.1:6379
+      JWT_ACCESS_SECRET: ci-access-secret-with-at-least-32-characters
+      JWT_REFRESH_SECRET: ci-refresh-secret-with-at-least-32-characters
+      ENCRYPTION_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+      COOKIE_SECURE: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            server/package-lock.json
+            client/package-lock.json
+      - run: npm ci
+      - run: npm ci --prefix server
+      - run: npm ci --prefix client
+      - run: npm run verify
+
+      # Cross-tenant isolation runs against the real mounted application backed
+      # by a MongoDB replica set. INTEGRATION_REQUIRED=1 makes a missing
+      # dependency fail the build instead of skipping the suite, so an
+      # infrastructure fault can never be mistaken for a passing isolation test.
+      - name: Cross-tenant isolation suite
+        run: npm run test:integration --prefix server
+        env:
+          INTEGRATION_REQUIRED: "1"
+          REDIS_URL: redis://127.0.0.1:6379/15
+
+      - run: npm audit --omit=dev --audit-level=high --prefix server
+      - run: npm audit --omit=dev --audit-level=high --prefix client
+

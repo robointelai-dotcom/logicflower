@@ -1,0 +1,87 @@
+{
+  "id": "trades",
+  "name": "Trades and home services",
+  "description": "Roofing, plumbing, electrical, landscaping and similar. Built around the quote-to-job cycle, where speed of first response decides who wins the work.",
+  "version": 1,
+  "customFields": [
+    { "key": "job_type", "label": "Job type", "type": "single_select", "options": ["Repair", "Installation", "Maintenance", "Emergency", "Survey"] },
+    { "key": "property_type", "label": "Property type", "type": "single_select", "options": ["Residential", "Commercial", "Industrial"] },
+    { "key": "site_address", "label": "Site address", "type": "longtext", "helpText": "Where the work happens, if different from the billing address." },
+    { "key": "access_notes", "label": "Access notes", "type": "longtext", "helpText": "Gate codes, parking, dogs, best time to attend." },
+    { "key": "quoted_amount", "label": "Quoted amount", "type": "number", "min": 0, "helpText": "In minor currency units, e.g. pence or paise." },
+    { "key": "preferred_contact_time", "label": "Preferred contact time", "type": "single_select", "options": ["Morning", "Afternoon", "Evening", "Any"] },
+    { "key": "warranty_expires", "label": "Warranty expires", "type": "date" }
+  ],
+  "pipeline": {
+    "name": "Jobs",
+    "description": "Enquiry through to completed work.",
+    "stages": [
+      {
+        "name": "New enquiry",
+        "probability": 10,
+        "taskTemplates": [
+          { "title": "Call the enquiry back", "dueInHours": 1, "priority": "high" }
+        ]
+      },
+      {
+        "name": "Survey booked",
+        "probability": 30,
+        "taskTemplates": [
+          { "title": "Confirm survey appointment the day before", "dueInHours": 24, "priority": "normal" }
+        ]
+      },
+      {
+        "name": "Quoted",
+        "probability": 50,
+        "taskTemplates": [
+          { "title": "Chase the quote", "dueInHours": 48, "priority": "high" },
+          { "title": "Second chase if still no answer", "dueInHours": 168, "priority": "normal" }
+        ]
+      },
+      { "name": "Scheduled", "probability": 85 },
+      { "name": "Completed", "outcome": "won", "probability": 100, "taskTemplates": [ { "title": "Request a review", "dueInHours": 24, "priority": "normal" } ] },
+      { "name": "Lost", "outcome": "lost", "probability": 0 }
+    ]
+  },
+  "sequences": [
+    {
+      "name": "Speed to lead",
+      "description": "First response within minutes, then two follow-ups. Speed of first contact is the single strongest predictor of winning trade work.",
+      "steps": [
+        { "channel": "sms", "wait": { "kind": "immediate" }, "bodyTemplate": "Hi {{contact.firstName}}, thanks for getting in touch. We have your enquiry and will call shortly to talk it through. Reply here any time." },
+        { "channel": "email", "wait": { "kind": "duration", "minutes": 60 }, "subjectTemplate": "About your enquiry", "bodyTemplate": "Hi {{contact.firstName}},\n\nThanks for contacting us. We are putting together some options for your job and will be in touch shortly.\n\nIf it is easier to talk, just reply to this email and we will call you back." },
+        { "channel": "sms", "wait": { "kind": "time_of_day", "hour": 10, "minute": 0, "afterMinutes": 1440 }, "bodyTemplate": "Hi {{contact.firstName}}, just checking you got our message about your enquiry. Happy to answer any questions." }
+      ],
+      "quietHours": { "enabled": true, "startMinute": 1200, "endMinute": 480 }
+    },
+    {
+      "name": "Quote follow-up",
+      "description": "Runs after a quote is sent. Stops the moment the customer replies.",
+      "steps": [
+        { "channel": "email", "wait": { "kind": "duration", "minutes": 2880 }, "subjectTemplate": "Any questions about your quote?", "bodyTemplate": "Hi {{contact.firstName}},\n\nJust checking whether you had any questions about the quote we sent.\n\nHappy to walk through it or adjust the scope if something is not quite right." },
+        { "channel": "sms", "wait": { "kind": "duration", "minutes": 7200 }, "bodyTemplate": "Hi {{contact.firstName}}, still happy to answer anything on the quote. Just reply here." }
+      ],
+      "quietHours": { "enabled": true, "startMinute": 1200, "endMinute": 480 }
+    }
+  ],
+  "forms": [
+    {
+      "name": "Request a quote",
+      "fields": [
+        { "field": "firstName", "label": "Your name", "required": true },
+        { "field": "phone", "label": "Phone number", "required": true },
+        { "field": "email", "label": "Email address" },
+        { "field": "custom:job_type", "label": "What do you need?", "required": true },
+        { "field": "custom:site_address", "label": "Where is the job?" },
+        { "field": "custom:preferred_contact_time", "label": "Best time to call" }
+      ],
+      "successMessage": "Thanks — we have your details and will be in touch shortly.",
+      "consentText": "By submitting this form you agree that we may contact you by phone, SMS and email about your enquiry. You can ask us to stop at any time."
+    }
+  ],
+  "operatorNotes": [
+    "The Speed to lead sequence sends an SMS immediately. Confirm your SMS sender registration is complete before activating it — in India this means DLT registration of both the sender ID and the template.",
+    "Quiet hours default to 20:00-08:00 in the contact's timezone. Adjust to match the hours you are willing to be replied to.",
+    "All sequences are created as drafts. Review the wording in your own voice before activating."
+  ]
+}

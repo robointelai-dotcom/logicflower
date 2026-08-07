@@ -1,0 +1,32 @@
+# gitleaks configuration.
+#
+# Extends the maintained default ruleset rather than replacing it; a hand-rolled
+# rule list goes stale the moment a new credential format appears.
+[extend]
+useDefault = true
+
+[[rules]]
+id = "logicflower-encryption-key"
+description = "64-character hex encryption key committed to the repository"
+regex = '''(?i)(encryption_key|jwt_access_secret|jwt_refresh_secret)\s*[:=]\s*['"]?[a-f0-9]{48,}['"]?'''
+tags = ["key", "logicflower"]
+
+[[rules]]
+id = "logicflower-stripe-live-key"
+description = "Stripe live-mode secret key"
+regex = '''sk_live_[0-9a-zA-Z]{16,}'''
+tags = ["stripe", "logicflower"]
+
+[allowlist]
+description = "Documented placeholders and reserved example values"
+regexes = [
+  '''replace-with-''',
+  '''replace-before-use''',
+  '''0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef''',
+  '''(?i)ci-(access|refresh)-secret-with-at-least-32-characters''',
+  '''(?i)test-(access|refresh)-secret-at-least-thirty-two-characters''',
+]
+paths = [
+  '''server/\.env\.example''',
+  '''docs/.*\.md''',
+]

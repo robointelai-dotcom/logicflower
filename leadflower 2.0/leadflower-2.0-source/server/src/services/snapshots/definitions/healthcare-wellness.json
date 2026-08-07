@@ -1,0 +1,75 @@
+{
+  "id": "healthcare_wellness",
+  "name": "Healthcare and wellness",
+  "description": "Clinics, dental practices, physiotherapy, aesthetics and similar. Built around the enquiry-to-appointment cycle and the recall that follows it.",
+  "version": 1,
+  "customFields": [
+    { "key": "service_interest", "label": "Service of interest", "type": "single_select", "options": ["Consultation", "Treatment", "Assessment", "Follow-up", "Other"] },
+    { "key": "referral_source", "label": "How did they hear about us?", "type": "single_select", "options": ["Search", "Social", "Referral", "Walk-in", "Returning"] },
+    { "key": "preferred_practitioner", "label": "Preferred practitioner", "type": "text" },
+    { "key": "preferred_appointment_time", "label": "Preferred appointment time", "type": "single_select", "options": ["Morning", "Afternoon", "Evening", "Weekend", "Any"] },
+    { "key": "recall_due", "label": "Recall due", "type": "date", "helpText": "When this patient should next be contacted for a routine appointment." },
+    { "key": "insurance_provider", "label": "Insurance provider", "type": "text" }
+  ],
+  "pipeline": {
+    "name": "Patient enquiries",
+    "description": "Enquiry through to attended appointment.",
+    "stages": [
+      {
+        "name": "New enquiry",
+        "probability": 15,
+        "taskTemplates": [ { "title": "Call the enquiry back", "dueInHours": 4, "priority": "high" } ]
+      },
+      { "name": "Contacted", "probability": 35 },
+      {
+        "name": "Appointment booked",
+        "probability": 70,
+        "taskTemplates": [ { "title": "Confirm appointment the day before", "dueInHours": 24, "priority": "normal" } ]
+      },
+      { "name": "Attended", "outcome": "won", "probability": 100, "taskTemplates": [ { "title": "Set recall date", "dueInHours": 24, "priority": "normal" } ] },
+      { "name": "Did not attend", "outcome": "lost", "probability": 0, "taskTemplates": [ { "title": "Offer to rebook", "dueInHours": 24, "priority": "normal" } ] },
+      { "name": "Not proceeding", "outcome": "lost", "probability": 0 }
+    ]
+  },
+  "sequences": [
+    {
+      "name": "Enquiry follow-up",
+      "description": "Two gentle touches after an enquiry. Deliberately free of any clinical content.",
+      "steps": [
+        { "channel": "email", "wait": { "kind": "duration", "minutes": 30 }, "subjectTemplate": "Thanks for getting in touch", "bodyTemplate": "Hi {{contact.firstName}},\n\nThank you for your enquiry. A member of our team will be in touch shortly to arrange a convenient time.\n\nIf you would prefer we call at a particular time, just reply to this email and let us know." },
+        { "channel": "sms", "wait": { "kind": "time_of_day", "hour": 10, "minute": 0, "afterMinutes": 1440 }, "bodyTemplate": "Hi {{contact.firstName}}, following up on your enquiry with us. Reply here and we will arrange a time that suits you." }
+      ],
+      "quietHours": { "enabled": true, "startMinute": 1200, "endMinute": 540 }
+    },
+    {
+      "name": "Appointment reminder",
+      "description": "Reminder ahead of a booked appointment. Carries no reason for attendance.",
+      "steps": [
+        { "channel": "sms", "wait": { "kind": "time_of_day", "hour": 9, "minute": 0 }, "bodyTemplate": "Hi {{contact.firstName}}, a reminder of your appointment with us. Reply here if you need to change it." }
+      ],
+      "quietHours": { "enabled": true, "startMinute": 1200, "endMinute": 540 }
+    }
+  ],
+  "forms": [
+    {
+      "name": "Appointment enquiry",
+      "fields": [
+        { "field": "firstName", "label": "First name", "required": true },
+        { "field": "lastName", "label": "Last name", "required": true },
+        { "field": "phone", "label": "Phone number", "required": true },
+        { "field": "email", "label": "Email address" },
+        { "field": "custom:service_interest", "label": "What are you enquiring about?", "required": true },
+        { "field": "custom:preferred_appointment_time", "label": "Preferred time" }
+      ],
+      "successMessage": "Thanks — we have your enquiry and will contact you to arrange a time.",
+      "consentText": "By submitting this form you agree that we may contact you by phone, SMS and email about your enquiry. Please do not include clinical details in this form. You can ask us to stop contacting you at any time."
+    }
+  ],
+  "operatorNotes": [
+    "This snapshot provides technical privacy controls suitable for handling health information — encrypted message logs, role-based access, an audit trail and minimum necessary disclosure. It does not make your practice compliant with any health privacy regime. Compliance requires agreements, administrative and physical safeguards, staff training and audit, which are properties of your programme and not of this software. Take your own advice.",
+    "The templates deliberately contain no clinical detail, no treatment names and no reason for attendance. SMS and email are not confidential channels, and a reminder that names a procedure discloses it to anyone who sees the phone screen. Keep it that way when you edit them.",
+    "The enquiry form asks submitters not to include clinical details, because a public web form is the wrong place to collect them. If you need clinical intake, do it inside your practice management system.",
+    "Custom fields in this snapshot are administrative only. Do not add fields for diagnoses, medications or treatment history — the contact store is not a clinical record and does not have the controls one needs.",
+    "All sequences are created as drafts. Review the wording, and check your appointment reminder timing against your own no-show patterns, before activating."
+  ]
+}

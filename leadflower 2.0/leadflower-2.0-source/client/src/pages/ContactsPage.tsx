@@ -1,0 +1,130 @@
+import React from 'react'
+import { Building2, Mail, Phone, Plus, Search, UserPlus, Users } from 'lucide-react'
+import { getList, send } from '../api/client'
+import { Link } from '../router'
+import { Alert, Button, Card, EmptyState, Field, Modal, PageHeader, SkeletonRows, StatusBadge } from '../components/ui'
+import { useAction, useApi } from '../hooks/useApi'
+import type { UnknownRecord } from '../types'
+
+interface ContactRow extends UnknownRecord {
+  id: string
+  name?: string
+  firstName?: string
+  lastName?: string
+  companyName?: string
+  email?: string
+  phone?: string
+  lifecycleStatus?: string
+  tags?: string[]
+  lastActivityAt?: string
+}
+
+const LIFECYCLE = ['lead', 'engaged', 'qualified', 'customer', 'churned', 'unqualified'] as const
+
+export function displayName(contact: ContactRow): string {
+  return contact.name?.trim()
+    || [contact.firstName, contact.lastName].filter(Boolean).join(' ').trim()
+    || contact.companyName?.trim()
+    // Never fall through to an email address as a display name: it puts a
+    // personal identifier into every list, export and screenshot.
+    || 'Unnamed contact'
+}
+
+export default function ContactsPage() {
+  const [search, setSearch] = React.useState('')
+  const [applied, setApplied] = React.useState('')
+  const [lifecycle, setLifecycle] = React.useState('')
+  const [open, setOpen] = React.useState(false)
+  const [form, setForm] = React.useState({ firstName: '', lastName: '', email: '', phone: '', companyName: '' })
+  const action = useAction()
+
+  const query = useApi(async () => {
+    const params = new URLSearchParams()
+    if (applied) params.set('q', applied)
+    if (lifecycle) params.set('lifecycleStatus', lifecycle)
+    const suffix = params.toString()
+    return (await getList<ContactRow>(`/crm/contacts${suffix ? `?${suffix}` : ''}`, ['contacts'])).items
+  }, [applied, lifecycle])
+
+  const create = async (event: React.FormEvent) => {
+    event.preventDefault()
+    // At least one reachable address, or the contact can never be sent to and
+    // every sequence would exit on its first step.
+    if (!form.email.trim() && !form.phone.trim()) {
+      await action.run(async () => { throw new Error('A contact needs an email address or a phone number.') })
+      return
+    }
+    const result = await action.run(() => send('post', '/crm/contacts', form), 'Contact created.')
+    if (result !== undefined) {
+      setOpen(false)
+      setForm({ firstName: '', lastName: '', email: '', phone: '', companyName: '' })
+      await query.reload()
+    }
+  }
+
+  return <>
+    <PageHeader
+      eyebrow="Micro-CRM"
+      title="Contacts"
+      description="Everyone this workspace can reach, wherever they came from."
+      actions={<Button variant="primary" onClick={() => setOpen(true)}><UserPlus size={16} />New contact</Button>}
+    />
+    {action.error && <Alert onDismiss={action.clear}>{action.error}</Alert>}
+    {action.success && <Alert tone="success" onDismiss={action.clear}>{action.success}</Alert>}
+
+    <Card>
+      <form className="filter-bar" onSubmit={(event) => { event.preventDefault(); setApplied(search.trim()) }}>
+        <label className="search-input">
+          <Search size={16} />
+          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search name, company or email" aria-label="Search contacts" />
+        </label>
+        <select value={lifecycle} onChange={(event) => setLifecycle(event.target.value)} aria-label="Lifecycle status">
+          <option value="">All statuses</option>
+          {LIFECYCLE.map((status) => <option key={status} value={status}>{status}</option>)}
+        </select>
+        <Button type="submit">Search</Button>
+      </form>
+    </Card>
+
+    {query.loading ? <SkeletonRows rows={6} columns={5} />
+      : query.error ? <Alert>{query.error}</Alert>
+        : query.data?.length ? <Card>
+          <table className="data-table">
+            <thead><tr><th>Name</th><th>Contact</th><th>Status</th><th>Tags</th></tr></thead>
+            <tbody>
+              {query.data.map((contact) => <tr key={contact.id}>
+                <td>
+                  <Link to={`/contacts/${contact.id}`}><strong>{displayName(contact)}</strong></Link>
+                  {contact.companyName && <div className="muted"><Building2 size={13} /> {contact.companyName}</div>}
+                </td>
+                <td>
+                  {contact.email && <div className="muted"><Mail size={13} /> {contact.email}</div>}
+                  {contact.phone && <div className="muted"><Phone size={13} /> {contact.phone}</div>}
+                </td>
+                <td><StatusBadge status={contact.lifecycleStatus === 'customer' ? 'active' : contact.lifecycleStatus === 'churned' ? 'failed' : 'pending'} label={contact.lifecycleStatus} /></td>
+                <td>{(contact.tags ?? []).slice(0, 3).map((tag) => <span key={tag} className="chip">{tag}</span>)}</td>
+              </tr>)}
+            </tbody>
+          </table>
+        </Card>
+          : <Card><EmptyState icon={<Users />} title="No contacts yet" description="Add one by hand, import a CSV, or let a hosted form collect them." action={<Button variant="primary" onClick={() => setOpen(true)}><Plus size={16} />New contact</Button>} /></Card>}
+
+    <Modal
+      open={open}
+      title="New contact"
+      description="An email address or phone number is required — without one, nothing can be sent to them."
+      onClose={() => setOpen(false)}
+      footer={<><Button onClick={() => setOpen(false)}>Cancel</Button><Button variant="primary" type="submit" form="contact-form" busy={action.loading}>Create contact</Button></>}
+    >
+      <form id="contact-form" className="form-stack" onSubmit={create}>
+        <div className="field-row">
+          <Field label="First name"><input value={form.firstName} onChange={(event) => setForm((current) => ({ ...current, firstName: event.target.value }))} autoFocus /></Field>
+          <Field label="Last name"><input value={form.lastName} onChange={(event) => setForm((current) => ({ ...current, lastName: event.target.value }))} /></Field>
+        </div>
+        <Field label="Company"><input value={form.companyName} onChange={(event) => setForm((current) => ({ ...current, companyName: event.target.value }))} /></Field>
+        <Field label="Email"><input type="email" value={form.email} onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))} /></Field>
+        <Field label="Phone" hint="International format, e.g. +919876543210"><input value={form.phone} onChange={(event) => setForm((current) => ({ ...current, phone: event.target.value }))} /></Field>
+      </form>
+    </Modal>
+  </>
+}
