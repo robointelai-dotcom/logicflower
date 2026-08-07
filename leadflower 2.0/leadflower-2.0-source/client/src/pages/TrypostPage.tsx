@@ -1,10 +1,23 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { PageHeader } from '../components/ui'
+import { api } from '../api/client'
 
 export default function TrypostPage() {
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(true)
+
   useEffect(() => {
-    // Directly redirect to the Trypost application login page as requested
-    window.location.href = 'http://139.99.134.4:8001/login'
+    async function loadTrypost() {
+      try {
+        const response = await api.get('/trypost/sso')
+        window.location.href = response.data.url
+      } catch (err) {
+        console.error(err)
+        setError('Failed to securely connect to the Social Dashboard. Please try again.')
+        setLoading(false)
+      }
+    }
+    loadTrypost()
   }, [])
 
   return (
@@ -12,12 +25,18 @@ export default function TrypostPage() {
       <PageHeader
         eyebrow="Social Media Auto Post"
         title="Opening Social Dashboard..."
-        description="Redirecting you to the Trypost login page..."
+        description="Please wait a moment while we securely log you in."
       />
       
-      <div style={{ marginTop: '40px', display: 'flex', justifyContent: 'center' }}>
-        <div className="spinner" style={{ border: '4px solid rgba(0,0,0,0.1)', width: '36px', height: '36px', borderRadius: '50%', borderLeftColor: 'var(--primary)' }}></div>
-      </div>
+      {error ? (
+        <div style={{ marginTop: '20px', padding: '16px', background: '#fee2e2', color: '#b91c1c', borderRadius: '8px' }}>
+          {error}
+        </div>
+      ) : loading ? (
+        <div style={{ marginTop: '40px', display: 'flex', justifyContent: 'center' }}>
+          <div className="spinner" style={{ border: '4px solid rgba(0,0,0,0.1)', width: '36px', height: '36px', borderRadius: '50%', borderLeftColor: 'var(--primary)' }}></div>
+        </div>
+      ) : null}
     </div>
   )
 }
