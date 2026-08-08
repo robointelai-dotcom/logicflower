@@ -23,6 +23,7 @@ import {
   canonicaliseAgentDefinition,
   detectOptOut,
   openingDisclosures,
+  PROVIDER_DEFAULTS,
   renderPrompt,
 } from '../src/services/voice/agentDefinition'
 
@@ -336,6 +337,45 @@ describe('voice agent definitions', () => {
     const partial = renderPrompt(agent, { 'organization.name': 'Acme Roofing' })
     expect(partial).not.toContain('{{')
     expect(partial).not.toContain('contact.firstName')
+  })
+
+  it('refuses a script on an agent type that ignores one', () => {
+    // Only a sales representative follows a step-by-step script. Storing one on
+    // the other types would leave an operator believing their script was being
+    // followed when the platform never reads it.
+    expect(() => canonicaliseAgentDefinition({ ...valid, agentType: 'support_agent', script: 'Step 1. Greet them.' }))
+      .toThrow(/only a sales representative/)
+    expect(() => canonicaliseAgentDefinition({ ...valid, agentType: 'sales_representative', script: 'Step 1. Greet them.' }))
+      .not.toThrow()
+  })
+
+  it('refuses a restricted topic with no words to say instead', () => {
+    // A restriction without wording leaves the agent to improvise the very
+    // answer the restriction exists to prevent.
+    expect(() => canonicaliseAgentDefinition({ ...valid, restrictedTopics: [{ topic: 'medical advice', refusalWording: '   ' }] }))
+      .toThrow()
+    expect(() => canonicaliseAgentDefinition({
+      ...valid,
+      restrictedTopics: [{ topic: 'medical advice', refusalWording: 'I will have someone qualified call you back.' }],
+    })).not.toThrow()
+  })
+
+  it('carries the provider defaults rather than inventing our own', () => {
+    const agent = canonicaliseAgentDefinition(valid)
+    expect(agent.welcomeMessageDelaySeconds).toBe(PROVIDER_DEFAULTS.welcomeMessageDelaySeconds)
+    expect(agent.machineTimeoutSeconds).toBe(PROVIDER_DEFAULTS.machineTimeoutSeconds)
+  })
+
+  it('changes the hash when behaviour changes, not only the prompt', () => {
+    const base = canonicaliseAgentDefinition(valid)
+    for (const change of [
+      { goal: 'Book a survey' },
+      { tone: 'Formal' },
+      { welcomeMessage: 'Hello there.' },
+      { restrictedTopics: [{ topic: 'pricing', refusalWording: 'A colleague will confirm that.' }] },
+    ]) {
+      expect(agentDefinitionHash(canonicaliseAgentDefinition({ ...valid, ...change }))).not.toBe(agentDefinitionHash(base))
+    }
   })
 
   it('hashes executable content so a recording can be tied to a script', () => {

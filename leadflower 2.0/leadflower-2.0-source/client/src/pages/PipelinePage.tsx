@@ -1,8 +1,9 @@
 import React from 'react'
-import { GitBranch, Plus } from 'lucide-react'
+import { GitBranch, Plus, Settings2, Trash2 } from 'lucide-react'
 import { getList, getOne, send } from '../api/client'
 import { Link } from '../router'
 import { Alert, Button, Card, EmptyState, Field, Modal, PageHeader, SkeletonRows } from '../components/ui'
+import { HelpLink } from './HelpPage'
 import { useAction, useApi } from '../hooks/useApi'
 import type { UnknownRecord } from '../types'
 
@@ -51,6 +52,10 @@ export default function PipelinePage() {
   const [overStage, setOverStage] = React.useState<string | null>(null)
   const [open, setOpen] = React.useState(false)
   const [form, setForm] = React.useState({ title: '', contactId: '', valueMinorUnits: '', currency: 'USD', stageId: '' })
+  const [stagesOpen, setStagesOpen] = React.useState(false)
+  const [newPipelineOpen, setNewPipelineOpen] = React.useState(false)
+  const [pipelineName, setPipelineName] = React.useState('')
+  const [draftStages, setDraftStages] = React.useState<Array<{ stageId?: string; name: string; outcome: 'open' | 'won' | 'lost' }>>([])
 
   const pipelines = useApi(async () => (await getList<PipelineSummary>('/crm/pipelines', ['pipelines'])).items, [])
 
@@ -91,6 +96,44 @@ export default function PipelinePage() {
 
   const stages = board.data?.stages ?? []
 
+  const openStageEditor = () => {
+    const current = pipelines.data?.find((pipeline) => pipeline.id === pipelineId)
+    setDraftStages((current?.stages ?? []).map((stage: any) => ({
+      stageId: stage.stageId, name: stage.name, outcome: stage.outcome ?? 'open',
+    })))
+    setStagesOpen(true)
+  }
+
+  const saveStages = async (event: React.FormEvent) => {
+    event.preventDefault()
+    // Existing stageIds are sent back unchanged, so renaming a stage does not
+    // orphan the deals in it or break a sequence trigger bound to it.
+    const result = await action.run(() => send('put', `/crm/pipelines/${pipelineId}/stages`, {
+      stages: draftStages.filter((stage) => stage.name.trim()),
+    }), 'Stages saved.')
+    if (result !== undefined) { setStagesOpen(false); await pipelines.reload(); await board.reload() }
+  }
+
+  const createPipeline = async (event: React.FormEvent) => {
+    event.preventDefault()
+    const result = await action.run(() => send<{ id: string }>('post', '/crm/pipelines', {
+      name: pipelineName,
+      stages: [
+        { name: 'New enquiry' }, { name: 'Quoted' }, { name: 'Scheduled' },
+        { name: 'Won', outcome: 'won' }, { name: 'Lost', outcome: 'lost' },
+      ],
+    }), 'Pipeline created.')
+    if (result) { setNewPipelineOpen(false); setPipelineName(''); await pipelines.reload(); setPipelineId(result.id) }
+  }
+
+  const moveStage = (index: number, delta: number) => setDraftStages((current) => {
+    const next = [...current]
+    const target = index + delta
+    if (target < 0 || target >= next.length) return current
+    ;[next[index], next[target]] = [next[target]!, next[index]!]
+    return next
+  })
+
   return <>
     <PageHeader
       eyebrow="Micro-CRM"
@@ -100,6 +143,8 @@ export default function PipelinePage() {
         {pipelines.data && pipelines.data.length > 1 && <select value={pipelineId} onChange={(event) => setPipelineId(event.target.value)} aria-label="Pipeline">
           {pipelines.data.map((pipeline) => <option key={pipeline.id} value={pipeline.id}>{pipeline.name}</option>)}
         </select>}
+        {pipelineId && <Button onClick={openStageEditor}><Settings2 size={15} />
+    <HelpLink route="/pipeline" />Edit stages</Button>}
         <Button variant="primary" disabled={!pipelineId} onClick={() => setOpen(true)}><Plus size={16} />New deal</Button>
       </>}
     />
@@ -108,7 +153,12 @@ export default function PipelinePage() {
 
     {pipelines.loading || board.loading ? <SkeletonRows rows={4} columns={4} />
       : pipelines.error ? <Alert>{pipelines.error}</Alert>
-        : !pipelines.data?.length ? <Card><EmptyState icon={<GitBranch />} title="No pipelines yet" description="Apply an industry snapshot during onboarding, or create a pipeline in settings." /></Card>
+        : !pipelines.data?.length ? <Card><EmptyState
+          icon={<GitBranch />}
+          title="No pipelines yet"
+          description="A pipeline is the set of stages your work moves through. Set up your workspace to get one written for your trade, or create your own."
+          action={<Button variant="primary" onClick={() => setNewPipelineOpen(true)}><Plus size={16} />Create a pipeline</Button>}
+        /></Card>
           : <div className="kanban">
             {stages.map((stage) => <section
               key={stage.stageId}
@@ -146,6 +196,55 @@ export default function PipelinePage() {
               </div>
             </section>)}
           </div>}
+
+    <Modal
+      open={stagesOpen}
+      title="Pipeline stages"
+      description="Renaming a stage keeps every deal in it. A stage that still holds deals cannot be removed."
+      onClose={() => setStagesOpen(false)}
+      footer={<><Button onClick={() => setStagesOpen(false)}>Cancel</Button><Button variant="primary" type="submit" form="stages-form" busy={action.loading}>Save stages</Button></>}
+    >
+      <form id="stages-form" className="form-stack" onSubmit={saveStages}>
+        <ol className="stage-editor">
+          {draftStages.map((stage, index) => <li key={stage.stageId ?? `new-${index}`}>
+            <input
+              value={stage.name}
+              onChange={(event) => setDraftStages((current) => current.map((item, position) => position === index ? { ...item, name: event.target.value } : item))}
+              placeholder="Stage name"
+              aria-label={`Stage ${index + 1} name`}
+            />
+            <select
+              value={stage.outcome}
+              onChange={(event) => setDraftStages((current) => current.map((item, position) => position === index ? { ...item, outcome: event.target.value as 'open' | 'won' | 'lost' } : item))}
+              aria-label={`Stage ${index + 1} outcome`}
+            >
+              <option value="open">In progress</option>
+              <option value="won">Won</option>
+              <option value="lost">Lost</option>
+            </select>
+            <div className="stage-tools">
+              <Button size="sm" variant="ghost" disabled={index === 0} onClick={() => moveStage(index, -1)} aria-label="Move up">↑</Button>
+              <Button size="sm" variant="ghost" disabled={index === draftStages.length - 1} onClick={() => moveStage(index, 1)} aria-label="Move down">↓</Button>
+              <Button size="sm" variant="ghost" disabled={draftStages.length === 1} onClick={() => setDraftStages((current) => current.filter((_, position) => position !== index))} aria-label="Remove"><Trash2 size={13} /></Button>
+            </div>
+          </li>)}
+        </ol>
+        <Button onClick={() => setDraftStages((current) => [...current, { name: '', outcome: 'open' }])}><Plus size={15} />Add stage</Button>
+        <p className="muted">Every pipeline needs at least one stage still in progress, or a live deal has nowhere to sit.</p>
+      </form>
+    </Modal>
+
+    <Modal
+      open={newPipelineOpen}
+      title="New pipeline"
+      description="Starts with five common stages. Rename or replace them afterwards."
+      onClose={() => setNewPipelineOpen(false)}
+      footer={<><Button onClick={() => setNewPipelineOpen(false)}>Cancel</Button><Button variant="primary" type="submit" form="pipeline-form" busy={action.loading}>Create</Button></>}
+    >
+      <form id="pipeline-form" className="form-stack" onSubmit={createPipeline}>
+        <Field label="Name" required><input value={pipelineName} onChange={(event) => setPipelineName(event.target.value)} required autoFocus placeholder="Jobs" /></Field>
+      </form>
+    </Modal>
 
     <Modal
       open={open}

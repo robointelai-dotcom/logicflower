@@ -2,6 +2,7 @@ import React from 'react'
 import { CalendarClock, Copy, Globe, Plus } from 'lucide-react'
 import { getList, send } from '../api/client'
 import { Alert, Button, Card, EmptyState, Field, Modal, PageHeader, SkeletonRows, StatusBadge } from '../components/ui'
+import { HelpLink } from './HelpPage'
 import { useAction, useApi } from '../hooks/useApi'
 import type { UnknownRecord } from '../types'
 
@@ -55,14 +56,16 @@ export default function BookingPagesPage() {
     if (result !== undefined) await query.reload()
   }
 
-  const bookingUrl = (slug: string) => `${window.location.origin}/api/v1/public/booking/${slug}`
+  // The page a customer opens, not the API the page calls.
+  const bookingUrl = (slug: string) => `${window.location.origin}/book/${slug}`
 
   return <>
     <PageHeader
       eyebrow="Scheduling"
       title="Booking pages"
       description="Share a link. People pick a time that is genuinely free, and the confirmation runs through your sequences."
-      actions={<Button variant="primary" onClick={() => setOpen(true)}><Plus size={16} />New booking page</Button>}
+      actions={<Button variant="primary" onClick={() => setOpen(true)}><Plus size={16} />
+    <HelpLink route="/booking" />New booking page</Button>}
     />
     {action.error && <Alert onDismiss={action.clear}>{action.error}</Alert>}
     {action.success && <Alert tone="success" onDismiss={action.clear}>{action.success}</Alert>}

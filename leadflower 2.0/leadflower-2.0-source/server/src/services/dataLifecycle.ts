@@ -50,6 +50,9 @@ import { dataLifecycleQueue } from '../queue'
 import Appointment from '../models/Appointment'
 import Conversation from '../models/Conversation'
 import BookingPage from '../models/BookingPage'
+// Blog posts, site settings and redirects are PLATFORM-owned, not tenant-owned,
+// so they are deliberately absent from the organisation erasure registry below:
+// deleting an organisation must not delete the public website.
 import Company from '../models/Company'
 import DialerJob from '../models/DialerJob'
 import TagRule from '../models/TagRule'

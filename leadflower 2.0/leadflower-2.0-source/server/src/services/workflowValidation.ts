@@ -4,6 +4,15 @@ import { platformChargeNotice } from './nodeLibrary';
 
 export const SUPPORTED_NODE_TYPES = new Set([
   'action.contact.tag.add', 'action.contact.tag.remove', 'condition.contact.hasTag',
+  'action.crm.contact.upsert', 'action.crm.sequence.enrol', 'action.crm.deal.move', 'action.crm.task.create',
+  // Native CRM triggers. A workflow could always start from a HighLevel contact
+  // being created; now it can start from one created here.
+  'trigger.crm.contactCreated', 'trigger.crm.contactUpdated',
+  'trigger.crm.tagAdded', 'trigger.crm.tagRemoved', 'trigger.crm.leadScoreChanged',
+  'trigger.crm.dealCreated', 'trigger.crm.dealStageChanged', 'trigger.crm.dealWon', 'trigger.crm.dealLost',
+  'trigger.crm.formSubmitted', 'trigger.crm.appointmentBooked', 'trigger.crm.appointmentCancelled',
+  'trigger.crm.inboundReply', 'trigger.crm.sequenceCompleted',
+  'trigger.crm.callCompleted', 'trigger.crm.reviewReceived',
   'trigger.webhook', 'trigger.schedule', 'trigger.ghl.contactCreated', 'trigger.ghl.formSubmitted',
   'trigger.ghl.tagAssigned', 'trigger.ghl.tagRemoved', 'trigger.hubspot.event', 'trigger.klaviyo.event',
   'trigger.activecampaign.event',

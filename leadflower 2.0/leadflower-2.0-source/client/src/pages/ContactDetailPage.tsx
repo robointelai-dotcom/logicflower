@@ -1,5 +1,5 @@
 import React from 'react'
-import { ArrowLeft, Archive, FileText, MessageSquare, Paperclip, StickyNote } from 'lucide-react'
+import { ArrowLeft, Archive, FileText, MessageSquare, Paperclip, StickyNote, Tag, X } from 'lucide-react'
 import { getOne, send } from '../api/client'
 import { Link, useParams } from '../router'
 import { Alert, Button, Card, EmptyState, Field, PageHeader, SkeletonRows, StatusBadge } from '../components/ui'
@@ -18,6 +18,15 @@ interface ContactDetail {
     tags?: string[]
     revenueMinorUnits?: number
     revenueCurrency?: string | null
+    leadScore?: number | null
+    jobTitle?: string
+    preferredContactMethod?: string | null
+    addressLine1?: string
+    addressLine2?: string
+    city?: string
+    region?: string
+    postalCode?: string
+    country?: string
     lastActivityAt?: string
     customFields?: Record<string, unknown>
   }
@@ -40,6 +49,7 @@ export default function ContactDetailPage() {
   const contactId = params.id ?? ''
   const action = useAction()
   const [note, setNote] = React.useState('')
+  const [newTag, setNewTag] = React.useState('')
 
   const query = useApi(async () => contactId ? await getOne<ContactDetail>(`/crm/contacts/${contactId}`) : null, [contactId])
 
@@ -48,6 +58,19 @@ export default function ContactDetailPage() {
     if (!note.trim()) return
     const result = await action.run(() => send('post', `/crm/contacts/${contactId}/notes`, { body: note }), 'Note added.')
     if (result !== undefined) { setNote(''); await query.reload() }
+  }
+
+  /**
+   * Tags go through their own endpoint, not a contact patch.
+   *
+   * Adding a tag can start a sequence, set a status or raise a task. Replacing
+   * the array through a general update would skip all of that, so the API
+   * refuses it — and this is the control that does it properly.
+   */
+  const changeTags = async (add: string[], remove: string[]) => {
+    const result = await action.run(() => send('post', `/crm/contacts/${contactId}/tags`, { add, remove }),
+      add.length ? 'Tag added.' : 'Tag removed.')
+    if (result !== undefined) { setNewTag(''); await query.reload() }
   }
 
   const archive = async () => {
@@ -124,8 +147,28 @@ export default function ContactDetailPage() {
             <div><dt>Status</dt><dd>{contact.lifecycleStatus ?? 'lead'}</dd></div>
             <div><dt>Revenue</dt><dd>{money(Number(contact.revenueMinorUnits ?? 0), contact.revenueCurrency)}</dd></div>
             <div><dt>Last activity</dt><dd>{contact.lastActivityAt ? new Date(contact.lastActivityAt).toLocaleDateString() : '—'}</dd></div>
+            {contact.leadScore != null && <div><dt>Lead score</dt><dd>{contact.leadScore}</dd></div>}
+            {contact.jobTitle && <div><dt>Job title</dt><dd>{contact.jobTitle}</dd></div>}
+            {contact.preferredContactMethod && <div><dt>Prefers</dt><dd>{contact.preferredContactMethod}</dd></div>}
           </dl>
-          {Boolean(contact.tags?.length) && <div className="chip-row">{contact.tags!.map((tag) => <span key={tag} className="chip">{tag}</span>)}</div>}
+          {(contact.addressLine1 || contact.city) && <address className="contact-address">
+            {[contact.addressLine1, contact.addressLine2, contact.city, contact.region, contact.postalCode, contact.country]
+              .filter(Boolean).join(', ')}
+          </address>}
+        </Card>
+
+        <Card title="Tags" subtitle="A tag can start follow-up, set a status or raise a task.">
+          <div className="chip-row">
+            {(contact.tags ?? []).map((tag) => <span key={tag} className="chip chip-removable">
+              {tag}
+              <button type="button" aria-label={`Remove ${tag}`} onClick={() => { void changeTags([], [tag]) }}><X size={11} /></button>
+            </span>)}
+            {!contact.tags?.length && <span className="muted">No tags yet.</span>}
+          </div>
+          <form className="tag-add" onSubmit={(event) => { event.preventDefault(); if (newTag.trim()) void changeTags([newTag.trim()], []) }}>
+            <input value={newTag} onChange={(event) => setNewTag(event.target.value)} placeholder="Add a tag" aria-label="New tag" />
+            <Button type="submit" size="sm" busy={action.loading} disabled={!newTag.trim()}><Tag size={14} />Add</Button>
+          </form>
         </Card>
 
         <Card title="Sequences">

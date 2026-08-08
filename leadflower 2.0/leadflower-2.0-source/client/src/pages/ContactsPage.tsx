@@ -3,6 +3,7 @@ import { Building2, Mail, Phone, Plus, Search, UserPlus, Users } from 'lucide-re
 import { getList, send } from '../api/client'
 import { Link } from '../router'
 import { Alert, Button, Card, EmptyState, Field, Modal, PageHeader, SkeletonRows, StatusBadge } from '../components/ui'
+import { HelpLink } from './HelpPage'
 import { useAction, useApi } from '../hooks/useApi'
 import type { UnknownRecord } from '../types'
 
@@ -35,8 +36,15 @@ export default function ContactsPage() {
   const [applied, setApplied] = React.useState('')
   const [lifecycle, setLifecycle] = React.useState('')
   const [open, setOpen] = React.useState(false)
-  const [form, setForm] = React.useState({ firstName: '', lastName: '', email: '', phone: '', companyName: '' })
+  const [form, setForm] = React.useState({
+    firstName: '', lastName: '', email: '', phone: '', companyName: '',
+    jobTitle: '', secondaryPhone: '',
+    addressLine1: '', addressLine2: '', city: '', region: '', postalCode: '', country: '',
+    lifecycleStatus: 'lead', preferredContactMethod: '', referredBy: '', leadScore: '',
+  })
+  const [showMore, setShowMore] = React.useState(false)
   const action = useAction()
+  const set = (key: string, value: string) => setForm((current) => ({ ...current, [key]: value }))
 
   const query = useApi(async () => {
     const params = new URLSearchParams()
@@ -54,10 +62,24 @@ export default function ContactsPage() {
       await action.run(async () => { throw new Error('A contact needs an email address or a phone number.') })
       return
     }
-    const result = await action.run(() => send('post', '/crm/contacts', form), 'Contact created.')
+    // Empty strings are stripped rather than sent: posting an empty postcode
+    // would store one, and "" is not the same as "not supplied".
+    const payload: Record<string, unknown> = {}
+    for (const [key, value] of Object.entries(form)) {
+      if (String(value).trim()) payload[key] = value
+    }
+    if (payload.leadScore !== undefined) payload.leadScore = Number(payload.leadScore)
+
+    const result = await action.run(() => send('post', '/crm/contacts', payload), 'Contact created.')
     if (result !== undefined) {
       setOpen(false)
-      setForm({ firstName: '', lastName: '', email: '', phone: '', companyName: '' })
+      setForm({
+        firstName: '', lastName: '', email: '', phone: '', companyName: '',
+        jobTitle: '', secondaryPhone: '',
+        addressLine1: '', addressLine2: '', city: '', region: '', postalCode: '', country: '',
+        lifecycleStatus: 'lead', preferredContactMethod: '', referredBy: '', leadScore: '',
+      })
+      setShowMore(false)
       await query.reload()
     }
   }
@@ -67,7 +89,8 @@ export default function ContactsPage() {
       eyebrow="Micro-CRM"
       title="Contacts"
       description="Everyone this workspace can reach, wherever they came from."
-      actions={<Button variant="primary" onClick={() => setOpen(true)}><UserPlus size={16} />New contact</Button>}
+      actions={<Button variant="primary" onClick={() => setOpen(true)}><UserPlus size={16} />
+    <HelpLink route="/contacts" />New contact</Button>}
     />
     {action.error && <Alert onDismiss={action.clear}>{action.error}</Alert>}
     {action.success && <Alert tone="success" onDismiss={action.clear}>{action.success}</Alert>}
@@ -118,12 +141,60 @@ export default function ContactsPage() {
     >
       <form id="contact-form" className="form-stack" onSubmit={create}>
         <div className="field-row">
-          <Field label="First name"><input value={form.firstName} onChange={(event) => setForm((current) => ({ ...current, firstName: event.target.value }))} autoFocus /></Field>
-          <Field label="Last name"><input value={form.lastName} onChange={(event) => setForm((current) => ({ ...current, lastName: event.target.value }))} /></Field>
+          <Field label="First name"><input value={form.firstName} onChange={(event) => set('firstName', event.target.value)} autoFocus /></Field>
+          <Field label="Last name"><input value={form.lastName} onChange={(event) => set('lastName', event.target.value)} /></Field>
         </div>
-        <Field label="Company"><input value={form.companyName} onChange={(event) => setForm((current) => ({ ...current, companyName: event.target.value }))} /></Field>
-        <Field label="Email"><input type="email" value={form.email} onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))} /></Field>
-        <Field label="Phone" hint="International format, e.g. +919876543210"><input value={form.phone} onChange={(event) => setForm((current) => ({ ...current, phone: event.target.value }))} /></Field>
+        <div className="field-row">
+          <Field label="Company"><input value={form.companyName} onChange={(event) => set('companyName', event.target.value)} /></Field>
+          <Field label="Job title"><input value={form.jobTitle} onChange={(event) => set('jobTitle', event.target.value)} /></Field>
+        </div>
+        <Field label="Email"><input type="email" value={form.email} onChange={(event) => set('email', event.target.value)} /></Field>
+        <div className="field-row">
+          <Field label="Phone" hint="International format, e.g. +919876543210"><input value={form.phone} onChange={(event) => set('phone', event.target.value)} /></Field>
+          <Field label="Second phone"><input value={form.secondaryPhone} onChange={(event) => set('secondaryPhone', event.target.value)} /></Field>
+        </div>
+
+        {/*
+          The rest is collapsed by default. Every field the API accepts is here,
+          but a form of eighteen inputs is one nobody fills in — the four that
+          matter stay above the fold.
+        */}
+        <button type="button" className="disclosure" onClick={() => setShowMore((current) => !current)}>
+          {showMore ? 'Fewer details' : 'Add address, status and more'}
+        </button>
+
+        {showMore && <>
+          <Field label="Address"><input value={form.addressLine1} onChange={(event) => set('addressLine1', event.target.value)} placeholder="Street address" /></Field>
+          <Field label=""><input value={form.addressLine2} onChange={(event) => set('addressLine2', event.target.value)} placeholder="Flat, unit, building" /></Field>
+          <div className="field-row">
+            <Field label="City"><input value={form.city} onChange={(event) => set('city', event.target.value)} /></Field>
+            <Field label="State or region"><input value={form.region} onChange={(event) => set('region', event.target.value)} /></Field>
+          </div>
+          <div className="field-row">
+            <Field label="Postcode"><input value={form.postalCode} onChange={(event) => set('postalCode', event.target.value)} /></Field>
+            <Field label="Country"><input value={form.country} onChange={(event) => set('country', event.target.value)} /></Field>
+          </div>
+          <div className="field-row">
+            <Field label="Status">
+              <select value={form.lifecycleStatus} onChange={(event) => set('lifecycleStatus', event.target.value)}>
+                {LIFECYCLE.map((status) => <option key={status} value={status}>{status}</option>)}
+              </select>
+            </Field>
+            <Field label="Prefers to be contacted by">
+              <select value={form.preferredContactMethod} onChange={(event) => set('preferredContactMethod', event.target.value)}>
+                <option value="">No preference</option>
+                <option value="phone">Phone</option>
+                <option value="sms">SMS</option>
+                <option value="email">Email</option>
+                <option value="whatsapp">WhatsApp</option>
+              </select>
+            </Field>
+          </div>
+          <div className="field-row">
+            <Field label="Referred by"><input value={form.referredBy} onChange={(event) => set('referredBy', event.target.value)} /></Field>
+            <Field label="Lead score" hint="0 to 100, your own judgement"><input type="number" min={0} max={100} value={form.leadScore} onChange={(event) => set('leadScore', event.target.value)} /></Field>
+          </div>
+        </>}
       </form>
     </Modal>
   </>

@@ -5,6 +5,45 @@ const OrganizationSchema = new Schema({
   slug: { type: String, required: true, unique: true, lowercase: true, trim: true, index: true },
   status: { type: String, enum: ['active', 'suspended', 'deleted'], default: 'active', index: true },
   timezone: { type: String, default: 'UTC', maxlength: 80 },
+  /**
+   * Where this organisation sits in the hierarchy.
+   *
+   *   corporate — the platform operator's own organisation. At most one.
+   *   agency    — a reseller. Owns client organisations.
+   *   client    — a business using the product. The default, and what an
+   *               ordinary signup creates.
+   *
+   * Defaults to `client` so an organisation created by any existing code path
+   * is a plain workspace and inherits no authority over anything.
+   */
+  kind: { type: String, enum: ['corporate', 'agency', 'client'], default: 'client', index: true },
+  /**
+   * The agency that owns this organisation, for clients. Null for agencies and
+   * for standalone businesses that signed up directly.
+   *
+   * Deliberately one level deep: agencies own clients, and clients own nothing.
+   * A tree of arbitrary depth would mean an access check has to walk upwards an
+   * unknown number of times, and every such walk is a place tenant isolation
+   * can be got wrong.
+   */
+  parentOrganizationId: { type: Schema.Types.ObjectId, default: null, index: true },
+  /**
+   * Whether the parent agency may enter this workspace at will.
+   *
+   *   standing   — the agency can open it any time. The default when the agency
+   *                PROVISIONED the workspace, because they built it, configured
+   *                it and are being paid to run it. The client is told plainly
+   *                and can change this whenever they like.
+   *   on_request — the agency must ask, the client approves, and access expires
+   *                exactly as support access does. The default when a business
+   *                signed up independently and later attached to an agency,
+   *                because in that direction the data was theirs first.
+   *
+   * Either way every entry is audited and visible to the client. The only
+   * difference is whether permission is asked each time or given once and
+   * revocable.
+   */
+  agencyAccessMode: { type: String, enum: ['standing', 'on_request'], default: 'standing' },
   retentionDays: { type: Number, default: 7, min: 7, max: 90 },
   // Open and click tracking records a recipient's behaviour and needs a
   // lawful basis the operator may not have, so it is opt-in per organisation

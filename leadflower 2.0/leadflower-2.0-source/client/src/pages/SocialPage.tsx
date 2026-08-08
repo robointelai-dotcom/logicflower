@@ -2,6 +2,7 @@ import React from 'react'
 import { CalendarDays, Megaphone, Plus, Star } from 'lucide-react'
 import { getList, getOne, send } from '../api/client'
 import { Alert, Button, Card, EmptyState, Field, Modal, PageHeader, SkeletonRows, StatusBadge } from '../components/ui'
+import { HelpLink } from './HelpPage'
 import { useAction, useApi } from '../hooks/useApi'
 import type { UnknownRecord } from '../types'
 
@@ -74,7 +75,8 @@ export default function SocialPage() {
       eyebrow="Social & reviews"
       title="Social"
       description="Compose once, schedule everywhere, and collect reviews that feed a widget on your site."
-      actions={<Button variant="primary" onClick={() => setOpen(true)}><Plus size={16} />New post</Button>}
+      actions={<Button variant="primary" onClick={() => setOpen(true)}><Plus size={16} />
+    <HelpLink route="/social" />New post</Button>}
     />
     {action.error && <Alert onDismiss={action.clear}>{action.error}</Alert>}
     {action.success && <Alert tone="success" onDismiss={action.clear}>{action.success}</Alert>}

@@ -18,6 +18,28 @@ const VoiceAgentVersionSchema = new Schema({
   voiceId: String,
   language: { type: String, default: 'en' },
   permittedActions: { type: [String], default: [] },
+  direction: { type: String, enum: ['inbound', 'outbound'], default: 'outbound' },
+  agentType: { type: String, enum: ['sales_representative', 'support_agent', 'lead_engagement'], default: 'lead_engagement' },
+  tone: String,
+  goal: String,
+  background: String,
+  /** Only a sales representative follows this. */
+  script: String,
+  welcomeMessage: String,
+  welcomeMessageDelaySeconds: { type: Number, default: 2 },
+  voicemailDetection: { type: Boolean, default: false },
+  voicemailAction: { type: String, enum: ['leave_message', 'hang_up'], default: 'hang_up' },
+  voicemailMessage: String,
+  machineTimeoutSeconds: { type: Number, default: 10 },
+  /**
+   * What the agent must refuse, and the words to say instead.
+   *
+   * The platform's answer resolution falls through script, instructions and
+   * knowledge base to the language model's own general knowledge — so an
+   * under-instructed agent improvises rather than declining. These are the
+   * explicit stops.
+   */
+  restrictedTopics: { type: [{ topic: String, refusalWording: String }], default: [] },
   maxCallSeconds: { type: Number, default: 300 },
   disclosures: {
     aiDisclosureText: { type: String, required: true },

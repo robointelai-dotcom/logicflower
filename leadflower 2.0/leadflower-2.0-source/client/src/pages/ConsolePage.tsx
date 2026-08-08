@@ -190,7 +190,17 @@ export default function ConsolePage() {
         {needsYou === 0 ? <div className="all-clear">
           <CheckCircle2 size={28} />
           <p>All clear</p>
-          <span className="muted">Replies, overdue tasks and anything the system could not finish will appear here.</span>
+          {/*
+            On a brand-new workspace "all clear" is technically true and
+            useless. If nothing has been set up yet, offer the next action
+            instead of congratulating somebody on an empty database.
+          */}
+          {(data?.contacts ?? 0) === 0 && (health?.scheduledSteps.pending ?? 0) === 0
+            ? <>
+              <span className="muted">Your workspace is empty. Set it up and your pipeline, follow-up and enquiry form are ready in a minute.</span>
+              <p className="all-clear-action"><Link to="/setup">Set up my workspace</Link></p>
+            </>
+            : <span className="muted">Replies, overdue tasks and anything the system could not finish will appear here.</span>}
         </div> : <div className="needs-list">
           <NeedsRow icon={<Inbox size={16} />} label="Unread replies" count={data?.unreadThreads ?? 0} to="/inbox" />
           <NeedsRow icon={<Timer size={16} />} label="Overdue tasks" count={data?.overdueTasks ?? 0} to="/pipeline" />

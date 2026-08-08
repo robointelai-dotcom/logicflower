@@ -161,6 +161,124 @@ router.post('/pages', asyncHandler(async (req, res) => {
   }
 }))
 
+/**
+ * Edit a booking page.
+ *
+ * The slug is deliberately NOT editable. It is the address a customer has been
+ * given, put in a confirmation email and possibly bookmarked — changing it
+ * silently breaks every one of those. Duplicating gives a new address when one
+ * is genuinely wanted.
+ */
+router.patch('/pages/:pageId', asyncHandler(async (req: any, res) => {
+  requireOperator(req)
+  const organizationId = requireOrganizationId(req)
+  const pageId = objectId(req.params.pageId, 'page')
+
+  const existing: any = await BookingPage.findOne({ _id: pageId, organizationId }).lean()
+  if (!existing) throw new HttpError(404, 'Page not found', 'No booking page with that identifier exists in this organisation')
+
+  const update: Record<string, unknown> = {}
+  for (const field of ['name', 'title', 'description', 'location', 'successMessage', 'consentText'] as const) {
+    if (req.body?.[field] !== undefined) update[field] = String(req.body[field]).slice(0, 2_000)
+  }
+  if (req.body?.assigneeUserId !== undefined) update.assigneeUserId = req.body.assigneeUserId ? String(req.body.assigneeUserId).slice(0, 64) : null
+  if (req.body?.enrolSequenceId !== undefined) update.enrolSequenceId = req.body.enrolSequenceId ? objectId(req.body.enrolSequenceId, 'sequence') : null
+  if (Array.isArray(req.body?.applyTags)) update.applyTags = req.body.applyTags.map(String).slice(0, 20)
+
+  // Availability is revalidated as a WHOLE, merging changes over the existing
+  // settings, so a partial edit cannot produce a page that would have been
+  // rejected at creation — a two-hour window with a three-hour appointment, say.
+  const availabilityKeys = ['timeZone', 'slotMinutes', 'slotIntervalMinutes', 'bufferBeforeMinutes', 'bufferAfterMinutes', 'minimumNoticeMinutes', 'horizonDays', 'workingWindows', 'blackoutDates'] as const
+  if (availabilityKeys.some((key) => req.body?.[key] !== undefined)) {
+    const merged = {
+      timeZone: String(req.body?.timeZone ?? existing.timeZone),
+      slotMinutes: Number(req.body?.slotMinutes ?? existing.slotMinutes),
+      slotIntervalMinutes: Number(req.body?.slotIntervalMinutes ?? existing.slotIntervalMinutes ?? existing.slotMinutes),
+      bufferBeforeMinutes: Number(req.body?.bufferBeforeMinutes ?? existing.bufferBeforeMinutes ?? 0),
+      bufferAfterMinutes: Number(req.body?.bufferAfterMinutes ?? existing.bufferAfterMinutes ?? 0),
+      minimumNoticeMinutes: Number(req.body?.minimumNoticeMinutes ?? existing.minimumNoticeMinutes ?? 0),
+      horizonDays: Number(req.body?.horizonDays ?? existing.horizonDays),
+      workingWindows: Array.isArray(req.body?.workingWindows) ? req.body.workingWindows : existing.workingWindows,
+      blackoutDates: Array.isArray(req.body?.blackoutDates) ? req.body.blackoutDates.map(String).slice(0, 200) : existing.blackoutDates,
+    }
+    try { assertValidAvailability(merged as AvailabilityConfig) } catch (error) {
+      if (error instanceof AvailabilityError) throw new HttpError(400, 'Availability is invalid', error.issues.join('; '), problemType('availability-invalid'))
+      throw error
+    }
+    // A published page whose new settings offer nothing would show a customer an
+    // empty calendar, so it is refused rather than silently emptied.
+    if (existing.status === 'published') {
+      const slots = generateSlots({ config: merged as AvailabilityConfig, busy: [], from: new Date(), now: new Date(), maxSlots: 1 })
+      if (!slots.length) {
+        throw new HttpError(409, 'No slots available', 'These settings would show visitors an empty calendar. This page is live, so the change is refused.', problemType('booking-page-no-slots'))
+      }
+    }
+    Object.assign(update, merged)
+  }
+
+  if (Array.isArray(req.body?.fields)) {
+    update.fields = req.body.fields.slice(0, 20).map((field: any, position: number) => {
+      const name = String(field?.field || '')
+      if (!BOOKING_FIELDS.has(name)) throw new HttpError(400, 'Unknown field', `"${name}" is not a collectable booking field`, problemType('booking-field-invalid'))
+      return { field: name, label: String(field?.label || name).slice(0, 200), required: Boolean(field?.required), position }
+    })
+  }
+
+  if (req.body?.slug !== undefined) {
+    throw new HttpError(409, 'The address cannot be changed', 'Customers may already hold this link. Duplicate the page if you need a new address.', problemType('booking-slug-locked'))
+  }
+
+  if (!Object.keys(update).length) throw new HttpError(400, 'Nothing to update', 'Supply at least one field to change')
+  await BookingPage.updateOne({ _id: pageId, organizationId }, { $set: update })
+  await recordAudit({ req, organizationId, action: 'crm.booking_page_updated', entityType: 'BookingPage', entityId: pageId, metadata: { fields: Object.keys(update) } })
+  res.json({ id: pageId, updated: Object.keys(update) })
+}))
+
+router.get('/pages/:pageId', asyncHandler(async (req, res) => {
+  const organizationId = requireOrganizationId(req)
+  const pageId = objectId(req.params.pageId, 'page')
+  const page: any = await BookingPage.findOne({ _id: pageId, organizationId }).lean()
+  if (!page) throw new HttpError(404, 'Page not found', 'No booking page with that identifier exists in this organisation')
+  res.json({ page: { ...page, id: String(page._id), _id: undefined } })
+}))
+
+/** A copy, with a fresh address and always as a draft. */
+router.post('/pages/:pageId/duplicate', asyncHandler(async (req: any, res) => {
+  requireOperator(req)
+  const organizationId = requireOrganizationId(req)
+  const pageId = objectId(req.params.pageId, 'page')
+  const page: any = await BookingPage.findOne({ _id: pageId, organizationId }).lean()
+  if (!page) throw new HttpError(404, 'Page not found', 'No booking page with that identifier exists in this organisation')
+
+  const created: any = await BookingPage.create({
+    ...page, _id: undefined,
+    name: `${page.name} (copy)`,
+    slug: crypto.randomBytes(18).toString('base64url'),
+    // A copy never inherits live status, so duplicating cannot publish.
+    status: 'draft', bookingCount: 0,
+    createdAt: undefined, updatedAt: undefined,
+    createdBy: req.auth?.userId,
+  })
+  res.status(201).json({ id: String(created._id), slug: created.slug })
+}))
+
+router.delete('/pages/:pageId', asyncHandler(async (req, res) => {
+  requireOperator(req)
+  const organizationId = requireOrganizationId(req)
+  const pageId = objectId(req.params.pageId, 'page')
+
+  // Appointments already booked survive. Deleting a page must not erase a
+  // commitment somebody made to a customer.
+  const upcoming = await Appointment.countDocuments({ organizationId, bookingPageId: pageId, status: 'scheduled', startAt: { $gte: new Date() } })
+  if (upcoming > 0 && String(req.query.confirm || '') !== 'keep-appointments') {
+    throw new HttpError(409, 'Appointments are still booked', `${upcoming} upcoming appointment(s) came from this page. They will be kept. Add ?confirm=keep-appointments to proceed.`, problemType('booking-page-has-appointments'))
+  }
+  const result = await BookingPage.deleteOne({ _id: pageId, organizationId })
+  if (!Number((result as any).deletedCount || 0)) throw new HttpError(404, 'Page not found', 'No booking page with that identifier exists in this organisation')
+  await recordAudit({ req, organizationId, action: 'crm.booking_page_deleted', entityType: 'BookingPage', entityId: pageId, metadata: { upcomingAppointmentsKept: upcoming } })
+  res.json({ id: pageId, deleted: true, appointmentsKept: upcoming })
+}))
+
 router.post('/pages/:pageId/status', asyncHandler(async (req, res) => {
   requireOperator(req)
   const organizationId = requireOrganizationId(req)

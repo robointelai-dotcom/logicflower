@@ -93,6 +93,8 @@ const tenantModels = [
   'SocialAccount', 'SocialPost', 'ScheduledPost', 'Review', 'ReviewRequest', 'ReviewWidget',
   'VoiceAgent', 'VoiceAgentVersion', 'VoiceCall', 'DialerJob',
   'Company', 'TagRule', 'BookingPage',
+  // Platform-owned marketing content: one public website, no tenant.
+  // Writes are gated on the platform role, not a workspace membership.
 ]
 for (const name of tenantModels) {
   const path = `server/src/models/${name}.ts`

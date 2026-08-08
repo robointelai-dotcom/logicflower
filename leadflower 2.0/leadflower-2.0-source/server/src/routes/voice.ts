@@ -190,7 +190,18 @@ router.post('/agents/:agentId/versions', asyncHandler(async (req, res) => {
     definitionHash: agentDefinitionHash(definition),
     prompt: definition.prompt, voiceId: definition.voiceId, language: definition.language,
     permittedActions: definition.permittedActions, maxCallSeconds: definition.maxCallSeconds,
-    disclosures: definition.disclosures, createdBy: req.auth?.userId,
+    disclosures: definition.disclosures,
+    direction: definition.direction, agentType: definition.agentType,
+    tone: definition.tone, goal: definition.goal, background: definition.background,
+    script: definition.script,
+    welcomeMessage: definition.welcomeMessage,
+    welcomeMessageDelaySeconds: definition.welcomeMessageDelaySeconds,
+    voicemailDetection: definition.voicemailDetection,
+    voicemailAction: definition.voicemailAction,
+    voicemailMessage: definition.voicemailMessage,
+    machineTimeoutSeconds: definition.machineTimeoutSeconds,
+    restrictedTopics: definition.restrictedTopics,
+    createdBy: req.auth?.userId,
   })
   await VoiceAgent.updateOne({ _id: agentId, organizationId }, { $set: { latestVersion: version, publishedVersionId: created._id } })
   await recordAudit({ req, organizationId, action: 'voice.agent_version_published', entityType: 'VoiceAgentVersion', entityId: String(created._id), metadata: { version, definitionHash: created.definitionHash } })
@@ -218,6 +229,36 @@ router.post('/agents/:agentId/status', asyncHandler(async (req, res) => {
   await VoiceAgent.updateOne({ _id: agentId, organizationId }, { $set: { status } })
   await recordAudit({ req, organizationId, action: 'voice.agent_status_changed', entityType: 'VoiceAgent', entityId: agentId, metadata: { from: agent.status, to: status } })
   res.json({ id: agentId, status })
+}))
+
+router.get('/agents/:agentId/version', asyncHandler(async (req, res) => {
+  const organizationId = requireOrganizationId(req)
+  const agentId = objectId(req.params.agentId, 'agent')
+  const agent: any = await VoiceAgent.findOne({ _id: agentId, organizationId }).lean()
+  if (!agent) throw new HttpError(404, 'Agent not found', 'No agent with that identifier exists in this organisation')
+  if (!agent.publishedVersionId) return res.json({ agent: { id: agentId, name: agent.name, status: agent.status }, version: null })
+
+  const version: any = await VoiceAgentVersion.findOne({ _id: agent.publishedVersionId, organizationId }).lean()
+  res.json({
+    agent: { id: agentId, name: agent.name, status: agent.status },
+    version: version && {
+      id: String(version._id), version: version.version, definitionHash: version.definitionHash,
+      definition: {
+        prompt: version.prompt, voiceId: version.voiceId, language: version.language,
+        permittedActions: version.permittedActions, maxCallSeconds: version.maxCallSeconds,
+        disclosures: version.disclosures,
+        direction: version.direction, agentType: version.agentType,
+        tone: version.tone, goal: version.goal, background: version.background, script: version.script,
+        welcomeMessage: version.welcomeMessage,
+        welcomeMessageDelaySeconds: version.welcomeMessageDelaySeconds,
+        voicemailDetection: version.voicemailDetection,
+        voicemailAction: version.voicemailAction,
+        voicemailMessage: version.voicemailMessage,
+        machineTimeoutSeconds: version.machineTimeoutSeconds,
+        restrictedTopics: version.restrictedTopics,
+      },
+    },
+  })
 }))
 
 /* -------------------------------------------------------------------- dialer */

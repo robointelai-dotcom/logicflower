@@ -12,6 +12,7 @@ import { decodeCursor, encodeCursor, pageLimit } from '../http/cursor'
 import { requireOrganizationId } from '../types/authenticatedRequest'
 import { recordAudit } from '../services/audit'
 import { enrolContact, enrolmentProgress, exitEnrolment, publishSequenceVersion } from '../services/sequences/enrolmentService'
+import { canonicaliseSequenceDefinition, SequenceDefinitionError } from '../services/sequences/sequenceDefinition'
 import { addSuppression, removeSuppression, SUPPRESSION_CHANNELS, SUPPRESSION_REASONS, type SuppressionChannel, type SuppressionReason } from '../services/sequences/suppression'
 import { domainAuthGuidance, storeIdentityCredentials, type MessagingProvider } from '../services/sequences/messagingIdentity'
 import { UNVERIFIED_PROVIDERS } from '../services/sequences/channels'
@@ -122,6 +123,60 @@ router.post('/:sequenceId/status', asyncHandler(async (req, res) => {
   await Sequence.updateOne({ _id: sequenceId, organizationId }, { $set: { status, updatedBy: req.auth?.userId } })
   await recordAudit({ req, organizationId, action: 'sequence.status_changed', entityType: 'Sequence', entityId: sequenceId, metadata: { from: sequence.status, to: status } })
   res.json({ id: sequenceId, status })
+}))
+
+/**
+ * One version, with its steps.
+ *
+ * The editor needs this to load an existing sequence for editing. Versions are
+ * immutable, so editing means loading the published one, changing it, and
+ * publishing a new version — the old one keeps running for anybody already
+ * enrolled on it.
+ */
+router.get('/:sequenceId/versions/:versionId', asyncHandler(async (req, res) => {
+  const organizationId = requireOrganizationId(req)
+  const sequenceId = objectId(req.params.sequenceId, 'sequence')
+  const versionId = objectId(req.params.versionId, 'version')
+  const version: any = await SequenceVersion.findOne({ _id: versionId, sequenceId, organizationId }).lean()
+  if (!version) throw new HttpError(404, 'Version not found', 'No version with that identifier exists for this sequence')
+  res.json({
+    id: String(version._id),
+    version: Number(version.version),
+    definitionHash: version.definitionHash,
+    definition: {
+      steps: (version.steps || []).map((step: any) => ({
+        channel: step.channel,
+        wait: step.wait,
+        subjectTemplate: step.subjectTemplate,
+        bodyTemplate: step.bodyTemplate,
+        whatsappTemplate: step.whatsappTemplate,
+        messagingIdentityId: step.messagingIdentityId ? String(step.messagingIdentityId) : null,
+      })),
+      exitConditions: version.exitConditions,
+      quietHours: version.quietHours,
+      defaultTimeZone: version.defaultTimeZone,
+    },
+  })
+}))
+
+/**
+ * Validate a definition without publishing it.
+ *
+ * Lets the editor show errors as somebody types rather than only when they hit
+ * publish, using exactly the same validator the publish path uses — so there is
+ * no chance of the editor accepting something the server would reject.
+ */
+router.post('/:sequenceId/versions/validate', asyncHandler(async (req, res) => {
+  requireOperator(req)
+  requireOrganizationId(req)
+  objectId(req.params.sequenceId, 'sequence')
+  try {
+    const definition = canonicaliseSequenceDefinition(req.body?.definition ?? req.body)
+    res.json({ valid: true, stepCount: definition.steps.length, issues: [] })
+  } catch (error) {
+    if (error instanceof SequenceDefinitionError) return res.json({ valid: false, issues: error.issues })
+    throw error
+  }
 }))
 
 /* ---------------------------------------------------------------- enrolments */

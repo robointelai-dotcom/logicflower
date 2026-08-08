@@ -1,7 +1,9 @@
 import React from 'react'
 import { PhoneCall, PhoneOff, ShieldAlert } from 'lucide-react'
 import { getList, getOne, send } from '../api/client'
+import { Link } from '../router'
 import { Alert, Button, Card, EmptyState, Field, Modal, PageHeader, SkeletonRows, StatusBadge } from '../components/ui'
+import { HelpLink } from './HelpPage'
 import { useAction, useApi } from '../hooks/useApi'
 import type { UnknownRecord } from '../types'
 
@@ -55,6 +57,7 @@ export default function VoicePage() {
       description="Every call passes suppression, consent, do-not-call and calling-window checks before it is placed."
       actions={<Button variant="primary" onClick={() => setOpen(true)}>New agent</Button>}
     />
+    <HelpLink route="/voice" />
     {action.error && <Alert onDismiss={action.clear}>{action.error}</Alert>}
     {action.success && <Alert tone="success" onDismiss={action.clear}>{action.success}</Alert>}
 
@@ -87,7 +90,7 @@ export default function VoicePage() {
         : agents.data?.length ? <table className="data-table">
           <thead><tr><th>Agent</th><th>Status</th><th>Version</th></tr></thead>
           <tbody>{agents.data.map((agent) => <tr key={agent.id}>
-            <td><strong>{agent.name}</strong></td>
+            <td><Link to={`/voice/agents/${agent.id}`}><strong>{agent.name}</strong></Link></td>
             <td><StatusBadge status={agent.status === 'active' ? 'active' : agent.status === 'paused' ? 'paused' : 'pending'} label={agent.status} /></td>
             <td className="muted">{agent.latestVersion ? `v${agent.latestVersion}` : 'unpublished'}</td>
           </tr>)}</tbody>

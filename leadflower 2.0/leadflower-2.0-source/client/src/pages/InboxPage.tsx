@@ -2,6 +2,7 @@ import React from 'react'
 import { Inbox, Send } from 'lucide-react'
 import { getList, getOne, send } from '../api/client'
 import { Alert, Button, Card, EmptyState, Field, PageHeader, SkeletonRows } from '../components/ui'
+import { HelpLink } from './HelpPage'
 import { useAction, useApi } from '../hooks/useApi'
 import type { UnknownRecord } from '../types'
 
@@ -48,6 +49,7 @@ export default function InboxPage() {
       title="Conversations"
       description="One thread per person across SMS and email. An inbound reply stops every sequence they are in."
     />
+    <HelpLink route="/inbox" />
     {action.error && <Alert onDismiss={action.clear}>{action.error}</Alert>}
     {action.success && <Alert tone="success" onDismiss={action.clear}>{action.success}</Alert>}
 

@@ -84,6 +84,14 @@ describe('local tag workflow nodes', () => {
     expect(platformChargeNotice('action.tag.add')).toMatch(/per-action/)
   })
 
+  it('does not flag the native CRM actions', () => {
+    // The point of these: a workflow can now act on this system's own records
+    // rather than reaching into an external CRM and paying for each action.
+    for (const node of ['action.crm.contact.upsert', 'action.crm.sequence.enrol', 'action.crm.deal.move', 'action.crm.task.create']) {
+      expect(platformChargeNotice(node)).toBeUndefined()
+    }
+  })
+
   it('does not flag the local tag actions', () => {
     expect(platformChargeNotice('action.contact.tag.add')).toBeUndefined()
     expect(platformChargeNotice('action.contact.tag.remove')).toBeUndefined()

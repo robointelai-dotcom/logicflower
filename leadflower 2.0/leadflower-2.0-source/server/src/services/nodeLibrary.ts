@@ -274,6 +274,85 @@ nodeExecutors['action.contact.update'] = async ({ data, ctx }) => {
  * Behaviour is otherwise identical, so a workflow can be migrated by changing
  * the node type and nothing else.
  */
+/**
+ * Native LogicFlower CRM actions.
+ *
+ * It was always odd that a workflow could create a contact in HighLevel but not
+ * in the CRM this platform ships with. These close that: a workflow can now
+ * create or update a local contact, move a deal, enrol somebody in a sequence,
+ * or raise a task — against this system's own records, at no per-action cost.
+ */
+nodeExecutors['action.crm.contact.upsert'] = async ({ data, ctx }) => {
+  const Contact = (await import('../models/Contact')).default
+  const { normalizeEmail, normalizePhone } = await import('./batchNormalization')
+
+  const email = data?.email ? normalizeEmail(template(String(data.email), ctx)) : ''
+  const rawPhone = data?.phone ? normalizePhone(template(String(data.phone), ctx), '') : ''
+  const phone = rawPhone.startsWith('+') ? rawPhone : ''
+  if (!email && !phone) throw new Error('action.crm.contact.upsert requires an email address or a phone number')
+
+  const fields: Record<string, unknown> = {}
+  for (const key of ['firstName', 'lastName', 'name', 'companyName', 'jobTitle', 'city', 'region', 'country', 'source']) {
+    if (data?.[key]) fields[key] = template(String(data[key]), ctx).slice(0, 240)
+  }
+  if (email) fields.email = email
+  if (phone) fields.phone = phone
+
+  // Matched on either identifier so a workflow run twice updates rather than
+  // duplicating the same person.
+  const identifiers: Array<Record<string, unknown>> = []
+  if (email) identifiers.push({ email })
+  if (phone) identifiers.push({ phone })
+  const existing: any = await Contact.findOne({ organizationId: ctx.organizationId, $or: identifiers }).select('_id').lean()
+
+  if (existing) {
+    await Contact.updateOne({ _id: existing._id, organizationId: ctx.organizationId }, { $set: fields })
+    return { contactId: String(existing._id), created: false }
+  }
+  const created: any = await Contact.create({
+    organizationId: ctx.organizationId,
+    ...fields,
+    source: fields.source ?? `workflow:${ctx.workflowId}`,
+    lifecycleStatus: 'lead',
+  })
+  return { contactId: String(created._id), created: true }
+}
+
+nodeExecutors['action.crm.sequence.enrol'] = async ({ data, ctx }) => {
+  const { enrolContact } = await import('./sequences/enrolmentService')
+  const result = await enrolContact({
+    organizationId: ctx.organizationId,
+    sequenceId: String(data?.sequenceId || ''),
+    contactId: contactId(data, ctx),
+    source: `workflow:${ctx.workflowId}`,
+  })
+  return result
+}
+
+nodeExecutors['action.crm.deal.move'] = async ({ data, ctx }) => {
+  const { moveDeal } = await import('./crm/pipelines')
+  return await moveDeal({
+    organizationId: ctx.organizationId,
+    dealId: String(data?.dealId || ''),
+    toStageId: String(data?.stageId || ''),
+  })
+}
+
+nodeExecutors['action.crm.task.create'] = async ({ data, ctx }) => {
+  const Task = (await import('../models/Task')).default
+  const title = template(String(data?.title || ''), ctx).slice(0, 200)
+  if (!title) throw new Error('action.crm.task.create requires a title')
+  const created: any = await Task.create({
+    organizationId: ctx.organizationId,
+    contactId: data?.contactId ? contactId(data, ctx) : null,
+    title,
+    dueAt: data?.dueInHours ? new Date(Date.now() + Number(data.dueInHours) * 3_600_000) : null,
+    priority: ['low', 'high'].includes(String(data?.priority)) ? String(data.priority) : 'normal',
+    source: `workflow:${ctx.workflowId}`,
+  })
+  return { taskId: String(created._id) }
+}
+
 nodeExecutors['action.contact.tag.add'] = async ({ data, ctx }) => {
   const { applyTagChanges } = await import('./crm/tags')
   const tags = (Array.isArray(data?.tags) ? data.tags : [data?.tag]).filter(Boolean).map((tag: unknown) => template(String(tag), ctx))

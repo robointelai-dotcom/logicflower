@@ -34,10 +34,12 @@ import crmRoutes from './routes/crm'
 import schedulingRoutes from './routes/scheduling'
 import inboxRoutes from './routes/inbox'
 import bookingRoutes, { publicBookingRouter } from './routes/booking'
+import hierarchyRoutes from './routes/hierarchy'
+import contentRoutes, { publicContentRouter } from './routes/content'
 import socialRoutes, { publicReviewRouter } from './routes/social'
+import trypostRoutes from './routes/trypost'
 import voiceRoutes from './routes/voice'
 import formRoutes, { publicFormRouter } from './routes/forms'
-import trypostRoutes from './routes/trypost'
 import { tenantRateLimit } from './middleware/tenantRateLimit'
 import { requireIdempotency } from './middleware/idempotency'
 import { deploymentWatchDecision } from './services/watchMode'
@@ -111,6 +113,11 @@ function mountApi(app: express.Express, prefix: '/api/v1' | '/api'): void {
   app.use(`${prefix}/crm`, authenticate, csrfProtection, requireOrganization, tenantRateLimit, idempotentMutation, operationalViewer, mutationGate(operationalOperator), crmRoutes)
   app.use(`${prefix}/scheduling`, authenticate, csrfProtection, requireOrganization, tenantRateLimit, idempotentMutation, operationalViewer, mutationGate(operationalOperator), schedulingRoutes)
   app.use(`${prefix}/inbox`, authenticate, csrfProtection, requireOrganization, tenantRateLimit, idempotentMutation, operationalViewer, mutationGate(operationalOperator), inboxRoutes)
+  app.use(`${prefix}/content`, authenticate, csrfProtection, tenantRateLimit, contentRoutes)
+  // Public marketing content: unauthenticated by necessity, rate limited, and
+  // read-only. Writes live on the authenticated router above.
+  app.use(`${prefix}/public/content`, publicContentRouter)
+  app.use(`${prefix}/hierarchy`, authenticate, csrfProtection, requireOrganization, tenantRateLimit, operationalViewer, hierarchyRoutes)
   app.use(`${prefix}/booking`, authenticate, csrfProtection, requireOrganization, tenantRateLimit, idempotentMutation, operationalViewer, mutationGate(operationalOperator), bookingRoutes)
   // Unauthenticated by design: someone booking an appointment has no account.
   // Rate limited, addressed by an unguessable slug, organisation derived from

@@ -236,3 +236,118 @@ Do not check an item based only on source review or mocks. The accountable opera
       valid one.
 - [ ] The confirmation sequence enrols on booking and respects suppression and
       quiet hours like any other sequence.
+
+## Organisation hierarchy and support access
+
+The rules below are the tenant-isolation boundary restated for three tiers. Each
+must be verified against a real database, because the resolver is the only thing
+standing between an agency and somebody else's client.
+
+### Access resolution
+
+- [ ] A direct membership wins over any inherited authority. A support engineer
+      who is also a member of an organisation acts as that member, and no grant
+      is consumed or audited.
+- [ ] An agency reaches its OWN clients and no others. Create two agencies with
+      a client each and confirm neither can switch into the other's.
+- [ ] An agency cannot reach another agency, nor the corporate organisation.
+- [ ] A client's own staff cannot reach their parent agency, or any sibling
+      client. Authority flows downward only.
+- [ ] A client's staff see no evidence an agency sits above them —
+      `GET /hierarchy/context` returns `tier: 'client'` with no agency id.
+- [ ] Every switch writes an audit record naming the user, the organisation and
+      the authority used (`membership`, `agency`, `corporate`, `support_grant`).
+
+### Support access
+
+- [ ] **Support with no approved grant is refused**, exactly as a stranger is.
+      Verify before testing anything else — this is the property customers are
+      being asked to trust.
+- [ ] A grant admits support only to the organisation that approved it.
+- [ ] A grant expires on its own. Set a short expiry, wait, confirm access stops
+      mid-session without anyone acting.
+- [ ] Revoking cuts access immediately, not at the next login.
+- [ ] `MAX_SUPPORT_GRANT_HOURS` is enforced at approval — a request for a longer
+      window is capped rather than honoured.
+- [ ] Support cannot approve its own request.
+- [ ] `useCount` increments per request, so a customer can compare what support
+      did against the reason they were given.
+- [ ] Any member, not only an administrator, can see who currently has access.
+
+### Hierarchy views leak nothing
+
+- [ ] `GET /hierarchy/agency/clients` and `/corporate/portfolio` return
+      organisation names, member counts and health figures **only**. Confirm no
+      contact, message, deal or appointment appears in either response. To read
+      a client's data an agency must switch into it, and the request is then
+      scoped to that single organisation like any other.
+
+### Tier dashboards
+
+- [ ] A client's navigation contains **no** Agency or Corporate section — not
+      hidden by CSS, absent from the DOM. Inspect the rendered markup, not the
+      screen.
+- [ ] `agencyAccessMode` defaults to `standing` on an agency-provisioned
+      workspace and the client can change it to `on_request`.
+- [ ] Under `on_request`, the agency is refused without a live approved grant,
+      exactly as support is. Verify the refusal before verifying the grant.
+- [ ] Switching into a client from the agency console scopes every subsequent
+      request to that client alone.
+- [ ] The corporate console returns **no** contact, message, deal or appointment
+      in any response. Check the network payload, not the screen.
+- [ ] The access ledger is readable by a `viewer`, not only an owner or admin.
+- [ ] Withdrawing access ends an in-flight session immediately.
+
+## Public website, blog and search settings
+
+- [ ] A non-corporate user receives 403 from every `/content/*` route. Verify
+      with a **workspace owner** and an **agency owner**, not only a viewer — a
+      workspace role must not open the public website.
+- [ ] `support` gets 403 too. Support has no standing access to anything,
+      including this.
+- [ ] Typing `/website` as a non-corporate user shows a plain refusal, not a
+      page shell that flashes and then errors.
+- [ ] **Deleting an organisation does NOT delete blog posts, site settings or
+      redirects.** These are platform-owned and deliberately absent from the
+      erasure registry; confirm that is still true after any change to
+      `dataLifecycle.ts`.
+- [ ] A scheduled post is not reachable at its public URL before its publication
+      time, and is reachable after.
+- [ ] A `noindex` post is absent from `/sitemap.xml` and carries a robots meta
+      tag when fetched directly.
+- [ ] `robotsNoindexAll` blocks the site in **both** `robots.txt` and the page
+      metadata. A staging site that leaks through one route while blocked on the
+      other is the failure this guards against.
+- [ ] Changing the address of a published post is refused, and the redirect
+      manager keeps the old link working.
+- [ ] Article HTML is escaped: publish a post whose body contains a script tag,
+      an `onerror` attribute and a `javascript:` link, then confirm none of them
+      execute or appear as markup in the rendered page.
+- [ ] `sitemap.xml` uses the configured canonical origin, and every URL in it
+      resolves.
+
+## Native CRM workflow triggers
+
+- [ ] Adding a tag to a contact starts a workflow whose trigger is
+      `trigger.crm.tagAdded` — with no external CRM involved and no per-action
+      charge.
+- [ ] A tag trigger narrowed to specific tags fires for `VIP` when written for
+      `vip`, and does not fire for an unrelated tag.
+- [ ] Moving a deal to a won stage fires `dealWon`, not `dealStageChanged`.
+- [ ] **Two workflows that trigger each other stop at the depth limit** rather
+      than running until the queue dies. Build the pair deliberately and confirm
+      the warning appears in the log.
+- [ ] A CRM write retried by its own caller starts the workflow **once**. The
+      queue job id is derived from the subject, not the clock — verify by
+      replaying the same request.
+- [ ] A workflow that fails to dispatch does not roll back the CRM write that
+      raised it: the tag stays applied.
+
+## Booking page editing
+
+- [ ] Editing hours on a published page is refused if the new settings would
+      show an empty calendar.
+- [ ] The slug cannot be changed. Duplicating produces a new address and always
+      a draft.
+- [ ] Deleting a page with upcoming appointments is refused without explicit
+      confirmation, and the appointments survive the deletion.

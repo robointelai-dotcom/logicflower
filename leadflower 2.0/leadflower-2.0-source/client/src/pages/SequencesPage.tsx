@@ -1,7 +1,9 @@
 import React from 'react'
 import { AlertTriangle, Pause, Play, Plus, Send } from 'lucide-react'
 import { getList, getOne, send } from '../api/client'
+import { Link } from '../router'
 import { Alert, Button, Card, EmptyState, Field, Modal, PageHeader, SkeletonRows, StatusBadge } from '../components/ui'
+import { HelpLink } from './HelpPage'
 import { useAction, useApi } from '../hooks/useApi'
 import type { UnknownRecord } from '../types'
 
@@ -45,7 +47,8 @@ export default function SequencesPage() {
       eyebrow="Follow-up engine"
       title="Sequences"
       description="Multi-step follow-up that waits reliably, respects quiet hours and stops the moment someone replies."
-      actions={<Button variant="primary" onClick={() => setOpen(true)}><Plus size={16} />New sequence</Button>}
+      actions={<Button variant="primary" onClick={() => setOpen(true)}><Plus size={16} />
+    <HelpLink route="/sequences" />New sequence</Button>}
     />
     {action.error && <Alert onDismiss={action.clear}>{action.error}</Alert>}
     {action.success && <Alert tone="success" onDismiss={action.clear}>{action.success}</Alert>}
@@ -76,13 +79,14 @@ export default function SequencesPage() {
           <table className="data-table">
             <thead><tr><th>Sequence</th><th>Status</th><th>Version</th><th /></tr></thead>
             <tbody>{query.data.map((sequence) => <tr key={sequence.id}>
-              <td><strong>{sequence.name}</strong>{sequence.description && <div className="muted">{sequence.description}</div>}</td>
+              <td><Link to={`/sequences/${sequence.id}`}><strong>{sequence.name}</strong></Link>{sequence.description && <div className="muted">{sequence.description}</div>}</td>
               <td><StatusBadge status={sequence.status === 'active' ? 'active' : sequence.status === 'paused' ? 'paused' : 'pending'} label={sequence.status} /></td>
               <td className="muted">{sequence.latestVersion ? `v${sequence.latestVersion}` : 'unpublished'}</td>
               <td className="row-actions">
                 {sequence.status === 'active'
                   ? <Button size="sm" variant="ghost" busy={action.loading} onClick={() => { void setStatus(sequence, 'paused') }}><Pause size={14} />Pause</Button>
                   : <Button size="sm" variant="ghost" busy={action.loading} disabled={!sequence.publishedVersionId} onClick={() => { void setStatus(sequence, 'active') }}><Play size={14} />Activate</Button>}
+                <Link to={`/sequences/${sequence.id}`} className="row-link">Edit steps</Link>
               </td>
             </tr>)}</tbody>
           </table>
@@ -90,7 +94,7 @@ export default function SequencesPage() {
           : <Card><EmptyState icon={<Send />} title="No sequences yet" description="A sequence is a series of timed messages that stops automatically when someone replies." action={<Button variant="primary" onClick={() => setOpen(true)}><Plus size={16} />New sequence</Button>} /></Card>}
 
     {query.data?.some((sequence) => sequence.status !== 'active' && !sequence.publishedVersionId) && <Card>
-      <p className="muted"><AlertTriangle size={14} /> A sequence needs a published version before it can be activated. Publish steps through the API until the step editor ships.</p>
+      <p className="muted"><AlertTriangle size={14} /> A sequence needs published steps before it can be activated. Open it to add them.</p>
     </Card>}
 
     <Modal

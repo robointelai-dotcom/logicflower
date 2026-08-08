@@ -43,6 +43,8 @@ const TENANT_MODELS = new Set([
   'SocialAccount', 'SocialPost', 'ScheduledPost', 'Review', 'ReviewRequest', 'ReviewWidget',
   'VoiceAgent', 'VoiceAgentVersion', 'VoiceCall', 'DialerJob',
   'Company', 'TagRule', 'BookingPage',
+  // Platform-owned marketing content: one public website, no tenant.
+  // Writes are gated on the platform role, not a workspace membership.
 ])
 
 /**

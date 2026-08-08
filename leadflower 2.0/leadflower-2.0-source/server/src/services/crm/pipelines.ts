@@ -271,6 +271,18 @@ export async function moveDeal(input: {
     metadata: { fromStageId, toStageId: String(input.toStageId), status, enrolledSequenceId, exitedSequenceIds, tasksCreated: createdTaskIds.length },
   })
 
+  // Native trigger, alongside the sequence enrolment this stage already drives.
+  // Fired after the write and the audit record, so a workflow that reads the
+  // deal sees the stage it has actually moved to.
+  const { dispatchCrmEvent } = await import('../workflows/crmTriggers')
+  void dispatchCrmEvent({
+    organizationId: input.organizationId,
+    trigger: status === 'won' ? 'trigger.crm.dealWon' : status === 'lost' ? 'trigger.crm.dealLost' : 'trigger.crm.dealStageChanged',
+    dealId: input.dealId,
+    data: { fromStageId, toStageId: String(input.toStageId), status },
+    actorUserId: input.userId,
+  })
+
   return { moved: true, fromStageId, toStageId: String(input.toStageId), status, enrolledSequenceId, exitedSequenceIds, createdTaskIds }
 }
 

@@ -1,7 +1,8 @@
 import React from 'react'
+import { getOne } from '../api/client'
 import {
   Activity, Archive, BarChart3, Bell, ChevronDown, ClipboardList, CreditCard, HeartPulse,
-  CalendarClock, Contact2, Inbox, KanbanSquare, LayoutDashboard, Layers3, LogOut, Megaphone, Menu, PhoneCall, Plug,
+  Building2, CalendarClock, Contact2, Globe, Inbox, KanbanSquare, LayoutDashboard, Layers3, LogOut, Megaphone, Menu, PhoneCall, Plug,
   Send, Settings, ShieldCheck, Sunrise, UserCog, Users,
   Workflow as WorkflowIcon, X,
   type LucideIcon,
@@ -47,6 +48,8 @@ const sections: Array<{ label: string; items: NavItem[] }> = [
     { label: 'Reports & usage', to: '/reports', icon: BarChart3, roles: ['owner', 'admin', 'operator', 'viewer', 'billing'] },
     { label: 'Team', to: '/team', icon: Users, roles: ['owner', 'admin'] },
     { label: 'Billing', to: '/billing', icon: CreditCard, roles: ['owner', 'billing'] },
+    // Any member can see who from outside can read their data, not admins only.
+    { label: 'Who has access', to: '/access-ledger', icon: ShieldCheck },
     { label: 'Settings', to: '/settings', icon: Settings },
   ] },
 ]
@@ -55,8 +58,58 @@ function initials(value: string): string {
   return value.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase() ?? '').join('') || 'LF'
 }
 
+/**
+ * Which tier is signed in.
+ *
+ * A client must see no evidence that an agency sits above them: a business
+ * owner logging in should see their business, not their position in somebody
+ * else's portfolio. So this returns `client` for them and the extra sections
+ * simply are not rendered.
+ */
+function useTier() {
+  const [tier, setTier] = React.useState<{ tier: string; corporate: boolean } | null>(null)
+  React.useEffect(() => {
+    let cancelled = false
+    void (async () => {
+      try {
+        const context = await getOne<{ tier: string; corporate: boolean }>('/hierarchy/context')
+        if (!cancelled) setTier(context)
+      } catch {
+        // A failure here must not blank the navigation; a client view is the
+        // safe default because it shows the least.
+        if (!cancelled) setTier({ tier: 'client', corporate: false })
+      }
+    })()
+    return () => { cancelled = true }
+  }, [])
+  return tier
+}
+
 export default function Shell() {
   const { session, logout, switchOrganization } = useAuth()
+  const tier = useTier()
+
+  /**
+   * Sections the signed-in tier should see.
+   *
+   * Built rather than filtered, so a client's navigation contains no hidden
+   * items that a stray CSS change could reveal.
+   */
+  const visibleSections = React.useMemo(() => {
+    const extra: Array<{ label: string; items: NavItem[] }> = []
+    if (tier?.corporate) {
+      extra.push({ label: 'Corporate', items: [
+        { label: 'Estate', to: '/estate', icon: Building2 },
+        { label: 'Website', to: '/website', icon: Globe },
+      ] })
+    }
+    if (tier?.tier === 'agency') {
+      extra.push({ label: 'Agency', items: [
+        { label: 'Clients', to: '/clients', icon: Building2 },
+      ] })
+    }
+    return [...extra, ...sections]
+  }, [tier])
   const [mobileOpen, setMobileOpen] = React.useState(false)
   const [profileOpen, setProfileOpen] = React.useState(false)
   const [switching, setSwitching] = React.useState(false)
@@ -84,7 +137,7 @@ export default function Shell() {
         <span>{role} · {session?.organization?.plan ?? 'Free plan'}</span>
       </div>
       <nav className="sidebar-nav" aria-label="Primary navigation">
-        {sections.map((section) => {
+        {visibleSections.map((section) => {
           const visible = section.items.filter((item) => !item.roles || item.roles.includes(role))
           if (!visible.length) return null
           return <div className="nav-section" key={section.label}><p>{section.label}</p>{visible.map((item) => <NavLink key={item.to} to={item.to} end={item.to === '/dashboard'} className={({ isActive }) => isActive ? 'active' : ''}><item.icon size={18} aria-hidden="true" /><span>{item.label}</span></NavLink>)}</div>

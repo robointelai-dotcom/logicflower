@@ -24,14 +24,6 @@ function cookie(name: string): string | undefined {
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE || '/api/v1'
 
-function generateIdempotencyKey(): string {
-  if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID()
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0
-    const v = c === 'x' ? r : (r & 0x3) | 0x8
-    return v.toString(16)
-  })
-}
 export const api = axios.create({
   baseURL: apiBaseUrl,
   timeout: 30_000,
@@ -44,7 +36,7 @@ api.interceptors.request.use((config) => {
   if (!['get', 'head', 'options'].includes(method)) {
     const token = cookie('lf_csrf')
     if (token) config.headers.set('X-CSRF-Token', decodeURIComponent(token))
-    if (!config.headers.has('Idempotency-Key')) config.headers.set('Idempotency-Key', generateIdempotencyKey())
+    if (!config.headers.has('Idempotency-Key')) config.headers.set('Idempotency-Key', crypto.randomUUID())
   }
   return config
 })
@@ -57,7 +49,7 @@ function refreshSession(): Promise<void> {
     // A stale-rotation retry is still the same logical mutation. Reuse the key
     // so the server can safely deduplicate it just as it does the original API
     // request after refresh.
-    const idempotencyKey = generateIdempotencyKey()
+    const idempotencyKey = crypto.randomUUID()
     const attempt = () => {
       const csrf = cookie('lf_csrf')
       return axios.post(`${apiBaseUrl}/auth/refresh`, undefined, {

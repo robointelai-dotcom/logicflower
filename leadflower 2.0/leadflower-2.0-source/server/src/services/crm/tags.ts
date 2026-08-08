@@ -146,6 +146,25 @@ export async function applyTagChanges(input: ApplyInput): Promise<TagChangeResul
     })
   }
 
+  // Workflow triggers fire alongside tag rules, not instead of them: a tag rule
+  // is configuration on the tag, a workflow is a graph the operator drew, and a
+  // business may reasonably use both.
+  const { dispatchCrmEvent } = await import('../workflows/crmTriggers')
+  for (const tag of added) {
+    void dispatchCrmEvent({
+      organizationId: input.organizationId, trigger: 'trigger.crm.tagAdded',
+      contactId: input.contactId, data: { tag, tagKey: normaliseTagKey(tag) },
+      depth: input.depth ?? 0, actorUserId: input.userId,
+    })
+  }
+  for (const tag of removed) {
+    void dispatchCrmEvent({
+      organizationId: input.organizationId, trigger: 'trigger.crm.tagRemoved',
+      contactId: input.contactId, data: { tag, tagKey: normaliseTagKey(tag) },
+      depth: input.depth ?? 0, actorUserId: input.userId,
+    })
+  }
+
   let rulesFired = 0
   if (depth < MAX_RULE_DEPTH) {
     rulesFired += await runTagRules({ ...input, now, depth, tags: added, event: 'added', currentTags: next })

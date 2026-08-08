@@ -1,385 +1,476 @@
 import React from 'react'
+import {
+  ArrowRight, CalendarCheck, Check, Inbox, MessageSquareText,
+  PhoneCall, Repeat2, Star, Users, Zap,
+} from 'lucide-react'
 import { Link } from '../router'
-import { AppLogo, Card } from '../components/ui'
+import { AppLogo } from '../components/ui'
 import { useAuth } from '../auth/AuthContext'
-import { ShieldCheck, DatabaseZap, Workflow, Activity, Users, LockKeyhole, Check, Server, Terminal, Lock, ChevronRight, GitCommit } from 'lucide-react'
 
-const HERO_SLIDES = [
-  {
-    badge: 'Enterprise Automation Cloud',
-    title: 'Connect platforms.\nScale securely.',
-    description: 'The tenant-isolated operations cloud that lets you build, preview, and deploy workflows with zero fear of data corruption.',
-    visual: (
-      <div style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ position: 'absolute', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(88,211,173,0.2) 0%, rgba(0,0,0,0) 70%)', animation: 'pulse 4s infinite' }} />
-        
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', zIndex: 1 }}>
-          <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', padding: '20px', borderRadius: '16px', backdropFilter: 'blur(10px)', display: 'flex', flexDirection: 'column', gap: '12px', animation: 'float 6s ease-in-out infinite' }}>
-            <Server size={24} color="#58d3ad" />
-            <div style={{ height: '4px', width: '40px', background: 'rgba(255,255,255,0.2)', borderRadius: '2px' }} />
-            <div style={{ height: '4px', width: '80px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px' }} />
-          </div>
-          <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', padding: '20px', borderRadius: '16px', backdropFilter: 'blur(10px)', display: 'flex', flexDirection: 'column', gap: '12px', animation: 'float 6s ease-in-out infinite', animationDelay: '1s', transform: 'translateY(30px)' }}>
-            <DatabaseZap size={24} color="#58d3ad" />
-            <div style={{ height: '4px', width: '50px', background: 'rgba(255,255,255,0.2)', borderRadius: '2px' }} />
-            <div style={{ height: '4px', width: '70px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px' }} />
-          </div>
-          <div style={{ background: 'rgba(88,211,173,0.1)', border: '1px solid rgba(88,211,173,0.3)', padding: '20px', borderRadius: '16px', backdropFilter: 'blur(10px)', display: 'flex', flexDirection: 'column', gap: '12px', animation: 'float 6s ease-in-out infinite', animationDelay: '2s', gridColumn: '1 / -1', marginTop: '10px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Workflow size={24} color="#58d3ad" />
-              <span style={{ fontSize: '10px', color: '#58d3ad', fontFamily: 'monospace', textTransform: 'uppercase', letterSpacing: '1px' }}>Active Sync</span>
-            </div>
-            <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-              <div style={{ height: '6px', width: '6px', background: '#58d3ad', borderRadius: '50%', boxShadow: '0 0 10px #58d3ad' }} />
-              <div style={{ height: '6px', width: '100%', background: 'rgba(88,211,173,0.2)', borderRadius: '3px', overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: '60%', background: '#58d3ad' }} />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  },
-  {
-    badge: '100% Data Safety Guarantee',
-    title: 'Preview before\nyou write anything.',
-    description: 'Our dry-run engine simulates workflows against live CRM data—without making a single destructive API call.',
-    visual: (
-      <div style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ background: '#0d1117', border: '1px solid #30363d', borderRadius: '12px', width: '100%', maxWidth: '400px', overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}>
-          <div style={{ background: '#161b22', padding: '12px 16px', borderBottom: '1px solid #30363d', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Terminal size={14} color="#8b949e" />
-            <span style={{ color: '#8b949e', fontSize: '12px', fontFamily: 'monospace' }}>dry-run-preview.sh</span>
-          </div>
-          <div style={{ padding: '20px', fontFamily: 'monospace', fontSize: '12px', lineHeight: 1.6, color: '#c9d1d9' }}>
-            <div style={{ display: 'flex', gap: '12px' }}><span style={{ color: '#8b949e' }}>1</span><span><span style={{ color: '#ff7b72' }}>Analyzing</span> target payload...</span></div>
-            <div style={{ display: 'flex', gap: '12px' }}><span style={{ color: '#8b949e' }}>2</span><span>Simulating CRM update:</span></div>
-            <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}><span style={{ color: '#8b949e' }}>3</span><span style={{ color: '#ff7b72' }}>- email: old@example.com</span></div>
-            <div style={{ display: 'flex', gap: '12px' }}><span style={{ color: '#8b949e' }}>4</span><span style={{ color: '#3fb950' }}>+ email: new@logicflower.com</span></div>
-            <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}><span style={{ color: '#8b949e' }}>5</span><span style={{ color: '#a5d6ff' }}>Status: DRY RUN COMPLETE</span></div>
-            <div style={{ display: 'flex', gap: '12px' }}><span style={{ color: '#8b949e' }}>6</span><span style={{ color: '#8b949e' }}>0 destructive writes executed.</span></div>
-          </div>
-        </div>
-      </div>
-    )
-  },
-  {
-    badge: 'Enterprise Compliance Built-in',
-    title: 'Immutable audit\nlogs for every action.',
-    description: 'Every single operation is cryptographically logged. Know exactly who did what, when, and how data was changed.',
-    visual: (
-      <div style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%', maxWidth: '400px' }}>
-          {[1, 2, 3].map((i) => (
-            <div key={i} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '12px', padding: '16px', display: 'flex', alignItems: 'center', gap: '16px', backdropFilter: 'blur(10px)', opacity: 1 - (i * 0.2), transform: `translateX(${i * 10}px)` }}>
-              <div style={{ background: 'rgba(88,211,173,0.1)', padding: '10px', borderRadius: '50%' }}>
-                <Lock size={16} color="#58d3ad" />
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                  <span style={{ color: 'white', fontSize: '13px', fontWeight: 600 }}>Policy Updated</span>
-                  <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', fontFamily: 'monospace' }}>2m ago</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <GitCommit size={12} color="rgba(255,255,255,0.4)" />
-                  <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', fontFamily: 'monospace' }}>hash_8f92b{i}</span>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    )
-  }
-];
+/**
+ * The public homepage.
+ *
+ * Two rules govern everything here.
+ *
+ * FIRST: every claim must be one we can stand behind. The engine, the CRM, the
+ * inbox, booking and reviews are built and can be described plainly. Social
+ * publishing and AI calling are gated on platform approvals we have not yet
+ * been granted, so they are shown as coming rather than included — a visitor
+ * who signs up expecting to post to Facebook and finds they cannot is a refund
+ * and a bad review, and one honest label prevents it.
+ *
+ * SECOND: all meaning lives in real HTML text, never inside an image. The
+ * diagrams below are built from DOM elements and inline SVG so a search engine
+ * or an AI assistant reads the same words a person does. An ecosystem picture
+ * with the value proposition baked into its pixels is invisible to both.
+ */
 
-function HeroSlider({ session }: { session: any }) {
-  const [currentSlide, setCurrentSlide] = React.useState(0);
+/* ------------------------------------------------------------------ pieces */
 
-  React.useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % HERO_SLIDES.length);
-    }, 6000);
-    return () => clearInterval(timer);
-  }, []);
-
-  return (
-    <section style={{ background: 'linear-gradient(135deg, var(--nav) 0%, #081712 100%)', margin: 0, padding: '80px 24px', overflow: 'hidden', position: 'relative' }}>
-      {/* Abstract background elements */}
-      <div style={{ position: 'absolute', top: '-10%', left: '-10%', width: '50%', height: '50%', background: 'radial-gradient(circle, rgba(88,211,173,0.08) 0%, rgba(0,0,0,0) 70%)', filter: 'blur(60px)' }} />
-      <div style={{ position: 'absolute', bottom: '-10%', right: '-10%', width: '50%', height: '50%', background: 'radial-gradient(circle, rgba(88,211,173,0.05) 0%, rgba(0,0,0,0) 70%)', filter: 'blur(60px)' }} />
-      
-      <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '60px', alignItems: 'center', position: 'relative', zIndex: 10 }}>
-        
-        {/* Left Side: Text */}
-        <div style={{ position: 'relative', minHeight: '400px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gridTemplateRows: '1fr', alignItems: 'center', height: '100%' }}>
-            {HERO_SLIDES.map((slide, index) => (
-              <div 
-                key={index}
-                style={{ 
-                  gridColumn: 1, 
-                  gridRow: 1, 
-                  opacity: currentSlide === index ? 1 : 0, 
-                  visibility: currentSlide === index ? 'visible' : 'hidden',
-                  transform: `translateY(${currentSlide === index ? 0 : 20}px)`,
-                  transition: 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
-                  pointerEvents: currentSlide === index ? 'auto' : 'none'
-                }}
-              >
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 14px', background: 'rgba(88, 211, 173, 0.1)', border: '1px solid rgba(88, 211, 173, 0.2)', color: '#58d3ad', borderRadius: '99px', fontSize: '11px', fontWeight: 700, marginBottom: '24px', letterSpacing: '0.5px', textTransform: 'uppercase' }}>
-                  <ShieldCheck size={14} /> {slide.badge}
-                </div>
-                <h1 style={{ margin: '0 0 24px', fontSize: 'clamp(40px, 5vw, 64px)', lineHeight: 1.1, letterSpacing: '-1.5px', color: 'white', whiteSpace: 'pre-line' }}>
-                  {slide.title}
-                </h1>
-                <p style={{ margin: '0 0 40px', fontSize: '18px', color: 'rgba(255, 255, 255, 0.7)', maxWidth: '500px', lineHeight: 1.6 }}>
-                  {slide.description}
-                </p>
-                
-                <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-                  {session ? (
-                    <Link className="button button-primary" style={{ padding: '0 24px', minHeight: '48px', fontSize: '14px', background: '#58d3ad', color: '#000', borderColor: '#58d3ad' }} to="/dashboard">Open Workspace <ChevronRight size={18} /></Link>
-                  ) : (
-                    <>
-                      <Link className="button button-primary" style={{ padding: '0 24px', minHeight: '48px', fontSize: '14px', background: '#58d3ad', color: '#000', borderColor: '#58d3ad' }} to="/register">Start free trial <ChevronRight size={18} /></Link>
-                      <Link className="button button-secondary" style={{ padding: '0 24px', minHeight: '48px', fontSize: '14px', color: 'white', borderColor: 'rgba(255,255,255,0.2)', background: 'transparent' }} to="/login">Sign in</Link>
-                    </>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div style={{ display: 'flex', gap: '8px', position: 'absolute', bottom: '-20px', left: 0 }}>
-            {HERO_SLIDES.map((_, index) => (
-              <button 
-                key={index} 
-                onClick={() => setCurrentSlide(index)}
-                aria-label={`Go to slide ${index + 1}`}
-                style={{ 
-                  width: currentSlide === index ? '24px' : '8px', 
-                  height: '8px', 
-                  borderRadius: '99px', 
-                  background: currentSlide === index ? '#58d3ad' : 'rgba(255,255,255,0.2)', 
-                  border: 'none', 
-                  padding: 0, 
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease'
-                }} 
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* Right Side: Visuals */}
-        <div style={{ position: 'relative', height: '400px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gridTemplateRows: '1fr', width: '100%', height: '100%' }}>
-            {HERO_SLIDES.map((slide, index) => (
-              <div 
-                key={index}
-                style={{ 
-                  gridColumn: 1, 
-                  gridRow: 1, 
-                  opacity: currentSlide === index ? 1 : 0, 
-                  visibility: currentSlide === index ? 'visible' : 'hidden',
-                  transform: `scale(${currentSlide === index ? 1 : 0.95})`,
-                  transition: 'all 0.8s cubic-bezier(0.16, 1, 0.3, 1)',
-                  pointerEvents: currentSlide === index ? 'auto' : 'none'
-                }}
-              >
-                {slide.visual}
-              </div>
-            ))}
-          </div>
-        </div>
-        
-      </div>
-    </section>
-  );
+function Pillar({ icon, eyebrow, title, children, status }: {
+  icon: React.ReactNode
+  eyebrow: string
+  title: string
+  children: React.ReactNode
+  status?: 'live' | 'coming'
+}) {
+  return <article className="pillar">
+    <span className="pillar-icon" aria-hidden="true">{icon}</span>
+    <p className="pillar-eyebrow">{eyebrow}</p>
+    <h3>{title}</h3>
+    <p>{children}</p>
+    {status === 'coming'
+      ? <span className="pillar-tag pillar-tag-coming">Coming — awaiting platform approval</span>
+      : <span className="pillar-tag">Available now</span>}
+  </article>
 }
+
+/**
+ * A flow diagram in DOM rather than an image.
+ *
+ * Every label is real text, so it is read by search engines, by screen readers
+ * and by anyone with images disabled — none of which is true of a picture.
+ */
+function JourneyDiagram() {
+  const steps = [
+    { icon: <Users size={17} />, label: 'Lead arrives', note: 'Form, call or import' },
+    { icon: <Zap size={17} />, label: 'Answered in seconds', note: 'Before they call anyone else' },
+    { icon: <Repeat2 size={17} />, label: 'Followed up', note: 'Until they reply — then it stops' },
+    { icon: <CalendarCheck size={17} />, label: 'Booked in', note: 'They pick a time that is free' },
+    { icon: <Star size={17} />, label: 'Review asked for', note: 'Once, after the job' },
+  ]
+  return <ol className="journey" aria-label="What happens when a lead arrives">
+    {steps.map((step, index) => <li key={step.label}>
+      <span className="journey-node" aria-hidden="true">{step.icon}</span>
+      <strong>{step.label}</strong>
+      <span className="journey-note">{step.note}</span>
+      {index < steps.length - 1 && <span className="journey-arrow" aria-hidden="true" />}
+    </li>)}
+  </ol>
+}
+
+/**
+ * The savings calculator.
+ *
+ * Every input is the visitor's own, the per-action rate is theirs to change,
+ * and the arithmetic is shown rather than asserted. A headline percentage with
+ * no working behind it is a claim we would have to defend; a calculator the
+ * visitor drives is a claim they make themselves.
+ */
+function SavingsCalculator() {
+  const [leads, setLeads] = React.useState(500)
+  const [steps, setSteps] = React.useState(6)
+  const [rate, setRate] = React.useState(0.01)
+
+  const actions = leads * steps
+  const perActionCost = actions * rate
+  const saved = perActionCost
+
+  const money = (value: number) => value.toLocaleString(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
+
+  return <div className="calc">
+    <div className="calc-inputs">
+      <label>
+        <span>Leads per month</span>
+        <input type="range" min={50} max={10000} step={50} value={leads} onChange={(event) => setLeads(Number(event.target.value))} />
+        <output>{leads.toLocaleString()}</output>
+      </label>
+      <label>
+        <span>Follow-up steps per lead</span>
+        <input type="range" min={1} max={20} value={steps} onChange={(event) => setSteps(Number(event.target.value))} />
+        <output>{steps}</output>
+      </label>
+      <label>
+        <span>Their charge per action</span>
+        <input type="range" min={0.002} max={0.05} step={0.001} value={rate} onChange={(event) => setRate(Number(event.target.value))} />
+        <output>${rate.toFixed(3)}</output>
+      </label>
+    </div>
+
+    <div className="calc-result">
+      <p className="calc-line">
+        {leads.toLocaleString()} leads × {steps} steps = <strong>{actions.toLocaleString()} actions</strong>
+      </p>
+      <p className="calc-line">
+        {actions.toLocaleString()} × ${rate.toFixed(3)} = <strong>{money(perActionCost)}</strong> in workflow fees
+      </p>
+      <p className="calc-headline">
+        <span>You would not pay that here</span>
+        <strong>{money(saved)}<span>/month</span></strong>
+      </p>
+      {/*
+        Stated plainly rather than buried. The comparison is workflow-action
+        fees only, and messages still cost whatever the provider charges.
+      */}
+      <p className="calc-note">
+        This compares <b>per-action workflow fees only</b>. LogicFlower does not charge per action — you
+        send through your own email and SMS provider and pay them directly for the messages themselves.
+        Set the rate above to whatever your current platform actually charges you.
+      </p>
+    </div>
+  </div>
+}
+
+/* -------------------------------------------------------------------- page */
 
 export default function HomePage() {
   const { session } = useAuth()
-  
-  return (
-    <div className="public-info-page">
-      <header style={{ borderBottom: '1px solid var(--line)', background: 'rgba(255, 255, 255, 0.95)', position: 'sticky', top: 0, zIndex: 100, backdropFilter: 'blur(10px)' }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '70px', padding: '0 24px' }}>
-          <AppLogo />
-          <nav style={{ display: 'flex', gap: '24px', alignItems: 'center', fontSize: '13px', fontWeight: 600, color: 'var(--ink)' }}>
-            <a href="#features">Features</a>
-            <a href="#pricing">Pricing</a>
-            <Link to="/help">Support</Link>
-          </nav>
-          <div style={{ display: 'flex', gap: '12px' }}>
-            {session ? (
-              <Link className="button button-primary" to="/dashboard">Go to Dashboard</Link>
-            ) : (
-              <>
-                <Link className="button button-secondary" to="/login">Customer Login</Link>
-                <Link className="button button-primary" to="/register">Customer Sign up</Link>
-              </>
-            )}
+  const primaryHref = session ? '/dashboard' : '/signup'
+  const primaryLabel = session ? 'Open your workspace' : 'Start free'
+
+  return <div className="marketing">
+    {/*
+      Structured data so search engines and AI assistants can extract what this
+      is without inferring it from prose. Escaped for the one sequence that can
+      terminate a script block early.
+    */}
+    <script type="application/ld+json" dangerouslySetInnerHTML={{
+      __html: JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'SoftwareApplication',
+        name: 'LogicFlower',
+        applicationCategory: 'BusinessApplication',
+        operatingSystem: 'Web',
+        description: 'Follow-up automation, micro-CRM, booking and reputation for small businesses, without per-action workflow fees.',
+        offers: { '@type': 'Offer', category: 'SaaS' },
+      }).replace(/</g, '\\u003c'),
+    }} />
+
+    <header className="marketing-nav">
+      <Link to="/" className="marketing-brand"><AppLogo /></Link>
+      <nav aria-label="Main">
+        <a href="#pillars">Product</a>
+        <a href="#ecosystem">Ecosystem</a>
+        <a href="#how">How it works</a>
+        <a href="#savings">Savings</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#faq">FAQ</a>
+      </nav>
+      <div className="marketing-nav-actions">
+        <Link to="/login">Sign in</Link>
+        <Link to={primaryHref} className="btn-primary-lg">{primaryLabel}</Link>
+      </div>
+    </header>
+
+    {/* ---------------------------------------------------------- hero */}
+    <section className="hero">
+      <div className="hero-copy">
+        <p className="hero-eyebrow">For small businesses that lose work by replying late</p>
+        <h1>Every enquiry answered<br /><em>in seconds</em>, not tomorrow.</h1>
+        <p className="hero-sub">
+          LogicFlower chases every lead for you — by text and email — and stops the moment they reply.
+          Add a simple CRM, a booking link and review collection, with <strong>no charge per action</strong>.
+        </p>
+        <div className="hero-actions">
+          <Link to={primaryHref} className="btn-primary-lg">{primaryLabel}<ArrowRight size={17} /></Link>
+          <a href="#savings" className="btn-ghost-lg">See what you would save</a>
+        </div>
+        <p className="hero-foot">No card required · Use your own email and SMS provider</p>
+      </div>
+
+      {/*
+        The hero visual is DOM, not an image: a phone showing the moment that
+        matters — a missed call turning into a booked job. It carries real text,
+        so the story survives with images off.
+      */}
+      <div className="hero-visual" aria-hidden="true">
+        <div className="phone">
+          <div className="phone-notch" />
+          <div className="phone-screen">
+            <div className="chat-event"><PhoneCall size={13} /> Missed call · 4:58pm</div>
+            <div className="chat-bubble chat-out">
+              Sorry we missed your call. Reply here and we&rsquo;ll get straight back to you.
+              <span className="chat-time">4:58pm</span>
+            </div>
+            <div className="chat-bubble chat-in">
+              Hi, need a quote for a leaking tap
+              <span className="chat-time">5:03pm</span>
+            </div>
+            <div className="chat-event chat-event-good"><Check size={13} /> Follow-up stopped — they replied</div>
+            <div className="chat-bubble chat-out">
+              Great — here are our next free slots.
+              <span className="chat-time">5:04pm</span>
+            </div>
+            <div className="chat-event chat-event-good"><CalendarCheck size={13} /> Booked · Thu 10:30am</div>
           </div>
         </div>
-      </header>
-      
-      <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 24px' }}>
-        <HeroSlider session={session} />
+        <div className="hero-orb hero-orb-a" />
+        <div className="hero-orb hero-orb-b" />
+      </div>
+    </section>
 
-        {/* FEATURES SECTION */}
-        <section id="features" style={{ margin: '80px 0' }}>
-          <div style={{ textAlign: 'center', marginBottom: '50px' }}>
-            <h2 style={{ fontSize: '32px', letterSpacing: '-0.8px', color: 'var(--nav)', marginBottom: '12px' }}>Everything you need to automate safely</h2>
-            <p style={{ color: 'var(--muted)', fontSize: '16px' }}>Built from the ground up to prevent destructive writes and protect sensitive data.</p>
+    {/* ------------------------------------------------------ the problem */}
+    <section className="band">
+      <div className="band-inner">
+        <h2>Why should software cost more just because you are winning more work?</h2>
+        <p className="band-sub">
+          Most automation platforms bill you for every step they take. Every text, every wait, every
+          branch. Grow from 200 leads to 2,000 and the bill grows with it — for work the software was
+          always going to do anyway.
+        </p>
+        <div className="contrast">
+          <div className="contrast-card contrast-them">
+            <h3>Charged per action</h3>
+            <ul>
+              <li>Every step in a follow-up is billed</li>
+              <li>Costs rise as you grow</li>
+              <li>You ration your own follow-up to save money</li>
+            </ul>
           </div>
-          
-          <div className="info-card-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
-            <Card title="Tenant-Isolated Vaults" subtitle="Data boundaries respected">
-              <div style={{ color: 'var(--brand)', margin: '16px 0' }}><Users size={32} /></div>
-              <p style={{ fontSize: '14px', lineHeight: 1.6 }}>Every customer workspace is cryptographically isolated. Your tokens and credentials never leak across tenant boundaries, guaranteeing compliance.</p>
-            </Card>
-            
-            <Card title="Dry-Run Impact Previews" subtitle="Execute with 100% confidence">
-              <div style={{ color: 'var(--brand)', margin: '16px 0' }}><DatabaseZap size={32} /></div>
-              <p style={{ fontSize: '14px', lineHeight: 1.6 }}>LogicFlower safely samples the connected CRM and identifies data impacts before a single byte is overwritten. Approve only what you expect.</p>
-            </Card>
-            
-            <Card title="Real-Time Observability" subtitle="Catch issues instantly">
-              <div style={{ color: 'var(--brand)', margin: '16px 0' }}><Activity size={32} /></div>
-              <p style={{ fontSize: '14px', lineHeight: 1.6 }}>Configure verified incident channels. Use execution history and rollback checkpoints to investigate issues without uncertain guesses.</p>
-            </Card>
-
-            <Card title="Visual Workflow Builder" subtitle="No code, full power">
-              <div style={{ color: 'var(--brand)', margin: '16px 0' }}><Workflow size={32} /></div>
-              <p style={{ fontSize: '14px', lineHeight: 1.6 }}>Build powerful branching automation workflows with an intuitive drag-and-drop interface, perfectly tailored for non-technical operators.</p>
-            </Card>
-            
-            <Card title="Bank-Grade Security" subtitle="Always protected">
-              <div style={{ color: 'var(--brand)', margin: '16px 0' }}><LockKeyhole size={32} /></div>
-              <p style={{ fontSize: '14px', lineHeight: 1.6 }}>Mandatory MFA for administrators, envelope encryption for OAuth secrets, and continuous security audits ensure your data is locked down.</p>
-            </Card>
-
-            <Card title="Immutable Audit Logs" subtitle="Traceable operations">
-              <div style={{ color: 'var(--brand)', margin: '16px 0' }}><ShieldCheck size={32} /></div>
-              <p style={{ fontSize: '14px', lineHeight: 1.6 }}>Every single action is tracked. Keep a permanent, tamper-evident log of who did what, when, and exactly what data payload was changed.</p>
-            </Card>
-          </div>
-        </section>
-
-        {/* PRICING SECTION */}
-        <section id="pricing" style={{ margin: '100px 0' }}>
-          <div style={{ textAlign: 'center', marginBottom: '50px' }}>
-            <h2 style={{ fontSize: '32px', letterSpacing: '-0.8px', color: 'var(--nav)', marginBottom: '12px' }}>Simple, transparent pricing</h2>
-            <p style={{ color: 'var(--muted)', fontSize: '16px' }}>Start for free, scale when you need advanced operations.</p>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', alignItems: 'center' }}>
-            {/* Starter Plan */}
-            <div style={{ background: 'white', border: '1px solid var(--line)', borderRadius: '16px', padding: '32px', boxShadow: 'var(--shadow)' }}>
-              <h3 style={{ fontSize: '20px', margin: '0 0 8px' }}>Starter</h3>
-              <p style={{ color: 'var(--muted)', fontSize: '13px', margin: '0 0 24px', minHeight: '40px' }}>Perfect for individuals exploring automation.</p>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: '24px' }}>
-                <span style={{ fontSize: '42px', fontWeight: 700, letterSpacing: '-1px' }}>$0</span>
-                <span style={{ color: 'var(--faint)', fontSize: '14px' }}>/month</span>
-              </div>
-              <Link className="button button-secondary" style={{ width: '100%', marginBottom: '32px' }} to="/register">Start for free</Link>
-              <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '16px', fontSize: '13px', color: 'var(--muted)' }}>
-                <li style={{ display: 'flex', gap: '12px' }}><Check size={18} color="var(--brand)" /> 1,000 tasks / month</li>
-                <li style={{ display: 'flex', gap: '12px' }}><Check size={18} color="var(--brand)" /> 3 active workflows</li>
-                <li style={{ display: 'flex', gap: '12px' }}><Check size={18} color="var(--brand)" /> 1 team member</li>
-                <li style={{ display: 'flex', gap: '12px' }}><Check size={18} color="var(--brand)" /> 7-day audit history</li>
-              </ul>
-            </div>
-
-            {/* Pro Plan */}
-            <div style={{ background: 'var(--nav)', border: '2px solid var(--brand)', borderRadius: '16px', padding: '40px 32px', color: 'white', boxShadow: '0 20px 40px rgba(8, 123, 93, 0.15)', transform: 'scale(1.02)' }}>
-              <div style={{ display: 'inline-block', background: 'var(--brand)', color: 'white', fontSize: '11px', fontWeight: 700, padding: '4px 10px', borderRadius: '99px', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '16px' }}>Most Popular</div>
-              <h3 style={{ fontSize: '20px', margin: '0 0 8px' }}>Agency</h3>
-              <p style={{ color: '#a9beb7', fontSize: '13px', margin: '0 0 24px', minHeight: '40px' }}>Advanced tools for operations teams.</p>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: '24px' }}>
-                <span style={{ fontSize: '42px', fontWeight: 700, letterSpacing: '-1px' }}>$49</span>
-                <span style={{ color: '#8faaa1', fontSize: '14px' }}>/month</span>
-              </div>
-              <Link className="button button-primary" style={{ width: '100%', marginBottom: '32px', background: 'var(--brand)', borderColor: 'var(--brand)' }} to="/register">Start Agency Trial</Link>
-              <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '16px', fontSize: '13px', color: '#d9e7e2' }}>
-                <li style={{ display: 'flex', gap: '12px' }}><Check size={18} color="#58d3ad" /> 50,000 tasks / month</li>
-                <li style={{ display: 'flex', gap: '12px' }}><Check size={18} color="#58d3ad" /> Unlimited workflows</li>
-                <li style={{ display: 'flex', gap: '12px' }}><Check size={18} color="#58d3ad" /> 10 team members</li>
-                <li style={{ display: 'flex', gap: '12px' }}><Check size={18} color="#58d3ad" /> 1-year audit history</li>
-                <li style={{ display: 'flex', gap: '12px' }}><Check size={18} color="#58d3ad" /> Dedicated Slack alerts</li>
-              </ul>
-            </div>
-
-            {/* Scale Plan */}
-            <div style={{ background: 'white', border: '1px solid var(--line)', borderRadius: '16px', padding: '32px', boxShadow: 'var(--shadow)' }}>
-              <h3 style={{ fontSize: '20px', margin: '0 0 8px' }}>Scale</h3>
-              <p style={{ color: 'var(--muted)', fontSize: '13px', margin: '0 0 24px', minHeight: '40px' }}>Custom limits for enterprise security.</p>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: '24px' }}>
-                <span style={{ fontSize: '42px', fontWeight: 700, letterSpacing: '-1px' }}>$199</span>
-                <span style={{ color: 'var(--faint)', fontSize: '14px' }}>/month</span>
-              </div>
-              <Link className="button button-secondary" style={{ width: '100%', marginBottom: '32px' }} to="/register">Contact Sales</Link>
-              <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '16px', fontSize: '13px', color: 'var(--muted)' }}>
-                <li style={{ display: 'flex', gap: '12px' }}><Check size={18} color="var(--brand)" /> 1,000,000+ tasks</li>
-                <li style={{ display: 'flex', gap: '12px' }}><Check size={18} color="var(--brand)" /> Dedicated IP pool</li>
-                <li style={{ display: 'flex', gap: '12px' }}><Check size={18} color="var(--brand)" /> Unlimited members</li>
-                <li style={{ display: 'flex', gap: '12px' }}><Check size={18} color="var(--brand)" /> Infinite data retention</li>
-                <li style={{ display: 'flex', gap: '12px' }}><Check size={18} color="var(--brand)" /> Bring Your Own KMS</li>
-              </ul>
-            </div>
-          </div>
-        </section>
-
-        {/* CTA SECTION */}
-        <section style={{ margin: '80px 0', padding: '60px 40px', background: 'linear-gradient(145deg, var(--nav), var(--nav-soft))', borderRadius: '20px', textAlign: 'center', color: 'white' }}>
-          <h2 style={{ fontSize: '36px', color: 'white', margin: '0 0 16px', letterSpacing: '-0.5px' }}>Ready to operate safely?</h2>
-          <p style={{ color: '#a9beb7', fontSize: '18px', margin: '0 auto 32px', maxWidth: '500px' }}>Join the thousands of modern B2B SaaS teams using LogicFlower to automate their mission-critical workflows.</p>
-          <div style={{ display: 'flex', gap: '16px', justifyContent: 'center' }}>
-            <Link className="button button-primary" style={{ padding: '0 28px', minHeight: '52px', fontSize: '15px' }} to="/register">Create Customer Account</Link>
-          </div>
-        </section>
-      </main>
-      
-      <footer style={{ background: 'white', borderTop: '1px solid var(--line)', padding: '60px 24px 30px' }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '40px', marginBottom: '60px' }}>
-            <div>
-              <AppLogo />
-              <p style={{ color: 'var(--muted)', fontSize: '13px', marginTop: '16px', lineHeight: 1.6 }}>The secure automation platform for data-driven operations teams.</p>
-            </div>
-            <div>
-              <h4 style={{ fontSize: '13px', color: 'var(--ink)', marginBottom: '16px' }}>Product</h4>
-              <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '13px' }}>
-                <li><a href="#features" style={{ color: 'var(--muted)' }}>Features</a></li>
-                <li><a href="#pricing" style={{ color: 'var(--muted)' }}>Pricing</a></li>
-                <li><Link to="/status" style={{ color: 'var(--muted)' }}>System Status</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h4 style={{ fontSize: '13px', color: 'var(--ink)', marginBottom: '16px' }}>Portals</h4>
-              <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '13px' }}>
-                <li><Link to="/login" style={{ color: 'var(--brand)', fontWeight: 600 }}>Customer Login</Link></li>
-                <li><Link to="/register" style={{ color: 'var(--muted)' }}>Customer Sign up</Link></li>
-                <li><Link to="/login" style={{ color: 'var(--muted)' }}>Platform Owner Login</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h4 style={{ fontSize: '13px', color: 'var(--ink)', marginBottom: '16px' }}>Legal</h4>
-              <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '13px' }}>
-                <li><a href="#" style={{ color: 'var(--muted)' }}>Privacy Policy</a></li>
-                <li><a href="#" style={{ color: 'var(--muted)' }}>Terms of Service</a></li>
-                <li><a href="#" style={{ color: 'var(--muted)' }}>Security</a></li>
-              </ul>
-            </div>
-          </div>
-          <div style={{ borderTop: '1px solid var(--line)', paddingTop: '30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: 'var(--faint)', fontSize: '12px' }}>
-            <div>&copy; {new Date().getFullYear()} LogicFlower. All rights reserved.</div>
+          <div className="contrast-card contrast-us">
+            <h3>LogicFlower</h3>
+            <ul>
+              <li><Check size={15} />No charge per action</li>
+              <li><Check size={15} />Your own email and SMS accounts</li>
+              <li><Check size={15} />Follow up as thoroughly as the job deserves</li>
+            </ul>
           </div>
         </div>
-      </footer>
-    </div>
-  )
+      </div>
+    </section>
+
+    {/* --------------------------------------------------------- pillars */}
+    <section className="section" id="pillars">
+      <div className="section-head">
+        <p className="eyebrow">The ecosystem</p>
+        <h2>Five things, working as one</h2>
+        <p className="section-sub">Everything a small business needs between &ldquo;someone enquired&rdquo; and &ldquo;the job is done&rdquo;.</p>
+      </div>
+      <div className="pillar-grid">
+        <Pillar icon={<Repeat2 size={20} />} eyebrow="Follow-up" title="Sequences that stop when they reply">
+          Multi-step follow-up by text and email. A three-day wait survives a restart, quiet hours are
+          kept in your customer&rsquo;s own timezone, and nobody is ever messaged twice.
+        </Pillar>
+        <Pillar icon={<Users size={20} />} eyebrow="Micro-CRM" title="A contact record you will actually keep up">
+          Contacts, tags, pipelines and deals — sized for a small business, not an enterprise. Move a
+          deal to &ldquo;Quoted&rdquo; and the chase starts on its own.
+        </Pillar>
+        <Pillar icon={<Inbox size={20} />} eyebrow="Inbox" title="One thread per person">
+          Texts and emails in one conversation, in order. Reply from the same screen. A missed call
+          gets a text back within seconds, before they ring the next name on the list.
+        </Pillar>
+        <Pillar icon={<CalendarCheck size={20} />} eyebrow="Booking" title="A link that shows real availability">
+          Your hours, your appointment length, your buffers. Two people cannot take the same slot, and
+          the confirmation and reminder run through your own follow-up.
+        </Pillar>
+        <Pillar icon={<Star size={20} />} eyebrow="Reputation" title="Reviews, asked for once">
+          A request after the job — never twice to the same customer. Approve what goes public, then
+          show it on your website with a widget that takes one line of code.
+        </Pillar>
+        <Pillar icon={<MessageSquareText size={20} />} eyebrow="Social & voice" title="Posting and AI calling" status="coming">
+          The composer, calendar and calling safeguards are built. Publishing and dialling need
+          approval from each platform and telephony provider, which we are working through — so we
+          will not sell it as ready until it is.
+        </Pillar>
+      </div>
+    </section>
+
+    {/* ------------------------------------------------------- ecosystem map */}
+    <section className="section section-tint" id="ecosystem">
+      <div className="section-head">
+        <p className="eyebrow">The whole picture</p>
+        <h2>Four engines, one system</h2>
+        <p className="section-sub">
+          Each part hands work to the next, so a lead never falls between them.
+        </p>
+      </div>
+
+      <figure className="ecosystem">
+        {/*
+          Two widths so a phone does not download a desktop-sized file. Lazy and
+          async because this sits below the fold and must not delay the hero.
+          The dimensions are declared to reserve the space and stop the page
+          jumping as it loads.
+        */}
+        <img
+          src="/ecosystem.jpg"
+          srcSet="/ecosystem-640.jpg 640w, /ecosystem.jpg 1024w"
+          sizes="(max-width: 900px) 100vw, 900px"
+          width={1024}
+          height={559}
+          loading="lazy"
+          decoding="async"
+          alt="How the four engines connect: a lead arrives and enters follow-up by email and SMS; the CRM holds the contact, pipeline and history; booking and social handle appointments, reputation and posts; and voice handles calls."
+        />
+        <figcaption>How a lead moves through the system.</figcaption>
+      </figure>
+
+      {/*
+        The meaning lives in this list, not in the picture above it. Text inside
+        an image is invisible to search engines, to AI assistants and to anyone
+        using a screen reader — so the diagram illustrates the point and these
+        four items carry it.
+      */}
+      <ol className="ecosystem-key">
+        <li>
+          <span className="ecosystem-number">1</span>
+          <strong>Follow-up engine</strong>
+          <span>Email and SMS under your own provider, so there is no charge per action.</span>
+        </li>
+        <li>
+          <span className="ecosystem-number">2</span>
+          <strong>Micro-CRM</strong>
+          <span>Contacts, tags, pipelines and deals — sized for a small business.</span>
+        </li>
+        <li>
+          <span className="ecosystem-number">3</span>
+          <strong>Booking and reputation</strong>
+          <span>A booking link that shows real availability, and reviews on your website.</span>
+        </li>
+        <li>
+          <span className="ecosystem-number">4</span>
+          <strong>Voice</strong>
+          <span>Missed-call text back today. AI calling once the safeguards are cleared.</span>
+        </li>
+      </ol>
+    </section>
+
+    {/* -------------------------------------------------------- how it works */}
+    <section className="section" id="how">
+      <div className="section-head">
+        <p className="eyebrow">How it works</p>
+        <h2>From enquiry to booked job</h2>
+        <p className="section-sub">You set it up once. It runs on every lead after that.</p>
+      </div>
+      <JourneyDiagram />
+    </section>
+
+    {/* ----------------------------------------------------------- savings */}
+    <section className="section" id="savings">
+      <div className="section-head">
+        <p className="eyebrow">Work it out yourself</p>
+        <h2>What per-action fees are costing you</h2>
+        <p className="section-sub">Move the sliders. The arithmetic is shown, not asserted.</p>
+      </div>
+      <SavingsCalculator />
+    </section>
+
+    {/* ------------------------------------------------------------ pricing */}
+    <section className="section" id="pricing">
+      <div className="section-head">
+        <p className="eyebrow">Pricing</p>
+        <h2>Priced by the size of your business, not how hard it works</h2>
+        <p className="section-sub">
+          No charge per message, per action or per automation. You connect your own email and SMS accounts
+          and pay those providers directly for what you send.
+        </p>
+      </div>
+
+      <div className="price-grid">
+        {[
+          {
+            name: 'Solo', price: 'Free', note: 'While you set things up',
+            points: ['1 user', 'Up to 250 contacts', 'Follow-up sequences', 'Shared inbox', 'Booking page', 'Review collection'],
+          },
+          {
+            name: 'Business', price: '$49', note: 'per month', featured: true,
+            points: ['Up to 5 users', 'Unlimited contacts', 'Everything in Solo', 'Missed-call text back', 'Pipelines and deals', 'Website review widget', 'Payment links'],
+          },
+          {
+            name: 'Multi-location', price: 'Talk to us', note: 'Several sites or an agency',
+            points: ['Unlimited users', 'Several workspaces', 'Manage clients from one console', 'Priority support'],
+          },
+        ].map((tier) => <article key={tier.name} className={tier.featured ? 'price-card featured' : 'price-card'}>
+          {tier.featured && <span className="price-flag">Most businesses start here</span>}
+          <h3>{tier.name}</h3>
+          <p className="price-amount">{tier.price}<span>{tier.note}</span></p>
+          <ul>{tier.points.map((point) => <li key={point}><Check size={14} />{point}</li>)}</ul>
+          <Link to={primaryHref} className={tier.featured ? 'btn-primary-lg' : 'btn-ghost-lg'}>
+            {tier.price === 'Talk to us' ? 'Get in touch' : primaryLabel}
+          </Link>
+        </article>)}
+      </div>
+
+      {/*
+        Said plainly on the pricing page rather than discovered after paying.
+        A customer who buys expecting to post to Facebook and cannot is a refund
+        and a bad review; one honest paragraph prevents both.
+      */}
+      <p className="price-note">
+        <strong>What you also pay for, and to whom.</strong> Messages are billed by your own email and SMS
+        provider at their rates — we never mark them up. Social publishing and AI calling are not included in
+        any plan yet: both are built but waiting on approval from the platforms and telephony providers
+        involved, and we will not charge for them until they work.
+      </p>
+    </section>
+
+    {/* --------------------------------------------------------------- faq */}
+    <section className="section section-tint" id="faq">
+      <div className="section-head">
+        <p className="eyebrow">Questions</p>
+        <h2>The things people ask first</h2>
+      </div>
+      <div className="faq">
+        {[
+          {
+            q: 'How is this cheaper than platforms that charge per action?',
+            a: 'They bill for each step a workflow takes. We do not charge per action at all — you connect your own email and SMS accounts and pay those providers directly for the messages. The calculator above shows the workflow fees you would stop paying; it does not include message costs, which you pay either way.',
+          },
+          {
+            q: 'What happens when someone replies mid-sequence?',
+            a: 'Everything stops for that person, on every channel, immediately. Being chased three more times after you have already answered is the fastest way to lose a customer, so it is handled automatically rather than left to you to remember.',
+          },
+          {
+            q: 'Do I need to be technical?',
+            a: 'No. Pick your trade when you sign up and you get a pipeline, follow-up sequences and an enquiry form already written for it. Change anything you like afterwards.',
+          },
+          {
+            q: 'Can I really post to social media?',
+            a: 'Not yet, and we will say so plainly rather than surprise you. The composer, calendar and scheduling are built, but publishing needs each platform to approve our application — Meta, LinkedIn, TikTok and the rest. Those take weeks to months and some can be refused. We will announce it when it is genuinely working.',
+          },
+          {
+            q: 'Is the AI calling available?',
+            a: 'Not yet. The parts that keep automated calling lawful are built and tested — calling hours in the customer\u2019s own timezone, do-not-call checks that block rather than assume, spoken disclosure, mid-call opt-out. The dialling itself needs a telephony provider connected, and we will not turn it on before that is done properly.',
+          },
+          {
+            q: 'What happens to my data?',
+            a: 'It stays yours. You can export everything, and delete it. Nobody from our team can open your workspace unless you approve it, that approval expires on its own, and you can see exactly who has access and withdraw it at any time.',
+          },
+        ].map((item) => <details key={item.q} className="faq-item">
+          <summary>{item.q}</summary>
+          <p>{item.a}</p>
+        </details>)}
+      </div>
+    </section>
+
+    {/* ---------------------------------------------------------------- cta */}
+    <section className="final-cta">
+      <h2>Stop losing work to a slow reply.</h2>
+      <p>Set it up once. Every enquiry after that gets answered while they are still deciding.</p>
+      <Link to={primaryHref} className="btn-primary-lg">{primaryLabel}<ArrowRight size={17} /></Link>
+    </section>
+
+    <footer className="marketing-footer">
+      <div>
+        <AppLogo />
+        <p>Follow-up, CRM, booking and reputation for small businesses.</p>
+      </div>
+      <nav aria-label="Footer">
+        <Link to="/login">Sign in</Link>
+        <Link to="/signup">Start free</Link>
+        <Link to="/status">System status</Link>
+      </nav>
+      <p className="marketing-copyright">© {new Date().getFullYear()} LogicFlower</p>
+    </footer>
+  </div>
 }
-

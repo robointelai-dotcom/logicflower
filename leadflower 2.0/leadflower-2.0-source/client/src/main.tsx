@@ -20,8 +20,19 @@ const ConnectionsPage = React.lazy(() => import('./pages/ConnectionsPage'))
 const OAuthReturnPage = React.lazy(() => import('./pages/ConnectionsPage').then((module) => ({ default: module.OAuthReturnPage })))
 const WorkflowsPage = React.lazy(() => import('./pages/WorkflowsPage'))
 const ConsolePage = React.lazy(() => import('./pages/ConsolePage'))
+const OnboardingWizardPage = React.lazy(() => import('./pages/OnboardingWizardPage'))
+const VoiceAgentEditorPage = React.lazy(() => import('./pages/VoiceAgentEditorPage'))
+const BlogIndexPage = React.lazy(() => import('./pages/BlogPage').then((module) => ({ default: module.BlogIndexPage })))
+const BlogArticlePage = React.lazy(() => import('./pages/BlogPage'))
+const ContentListPage = React.lazy(() => import('./pages/ContentAdminPage').then((module) => ({ default: module.ContentListPage })))
+const ContentEditorPage = React.lazy(() => import('./pages/ContentAdminPage'))
+const AgencyConsolePage = React.lazy(() => import('./pages/AgencyConsolePage'))
+const CorporateConsolePage = React.lazy(() => import('./pages/CorporateConsolePage'))
+const AccessLedgerPage = React.lazy(() => import('./pages/AccessLedgerPage'))
+const PublicBookingPage = React.lazy(() => import('./pages/PublicBookingPage'))
 const BookingPagesPage = React.lazy(() => import('./pages/BookingPage'))
 const SequencesPage = React.lazy(() => import('./pages/SequencesPage'))
+const SequenceEditorPage = React.lazy(() => import('./pages/SequenceEditorPage'))
 const ContactsPage = React.lazy(() => import('./pages/ContactsPage'))
 const ContactDetailPage = React.lazy(() => import('./pages/ContactDetailPage'))
 const PipelinePage = React.lazy(() => import('./pages/PipelinePage'))
@@ -43,7 +54,8 @@ const AdminPage = React.lazy(() => import('./pages/AdminPage'))
 const OnboardingPage = React.lazy(() => import('./pages/OnboardingPage'))
 const ForbiddenPage = React.lazy(() => import('./pages/SystemPages').then((module) => ({ default: module.ForbiddenPage })))
 const NotFoundPage = React.lazy(() => import('./pages/SystemPages').then((module) => ({ default: module.NotFoundPage })))
-const HelpCenterPage = React.lazy(() => import('./pages/SystemPages').then((module) => ({ default: module.HelpCenterPage })))
+const HelpCenterPage = React.lazy(() => import('./pages/HelpPage').then((module) => ({ default: module.HelpCenterPage })))
+const HelpArticlePage = React.lazy(() => import('./pages/HelpPage'))
 const StatusPage = React.lazy(() => import('./pages/SystemPages').then((module) => ({ default: module.StatusPage })))
 
 function WorkspaceHome() {
@@ -55,7 +67,13 @@ function WorkspaceHome() {
 const router = createBrowserRouter([
   { path: '/', element: <HomePage /> },
   { path: '/help', element: <HelpCenterPage /> },
+  { path: '/help/:slug', element: <HelpArticlePage /> },
   { path: '/status', element: <StatusPage /> },
+  // Genuinely public: a booking link must open for anyone, including somebody
+  // who happens to be signed in to their own workspace.
+  { path: '/book/:slug', element: <PublicBookingPage /> },
+  { path: '/blog', element: <BlogIndexPage /> },
+  { path: '/blog/:slug', element: <BlogArticlePage /> },
   { element: <PublicOnlyRoute />, children: [
     { path: '/login', element: <LoginPage /> },
     { path: '/register', element: <RegisterPage /> },
@@ -72,7 +90,14 @@ const router = createBrowserRouter([
         { path: '/connections', element: <ConnectionsPage /> },
         { path: '/platform', element: <DashboardPage /> },
         { path: '/booking', element: <BookingPagesPage /> },
+        { path: '/setup', element: <OnboardingWizardPage /> },
+        { path: '/clients', element: <AgencyConsolePage /> },
+        { path: '/estate', element: <CorporateConsolePage /> },
+        { path: '/website', element: <ContentListPage /> },
+        { path: '/website/posts/:id', element: <ContentEditorPage /> },
+        { path: '/access-ledger', element: <AccessLedgerPage /> },
         { path: '/sequences', element: <SequencesPage /> },
+        { path: '/sequences/:id', element: <SequenceEditorPage /> },
         { path: '/contacts', element: <ContactsPage /> },
         { path: '/contacts/:id', element: <ContactDetailPage /> },
         { path: '/pipeline', element: <PipelinePage /> },
@@ -80,6 +105,7 @@ const router = createBrowserRouter([
         { path: '/trypost', element: <TrypostPage /> },
         { path: '/social', element: <SocialPage /> },
         { path: '/voice', element: <VoicePage /> },
+        { path: '/voice/agents/:id', element: <VoiceAgentEditorPage /> },
         { path: '/workflows', element: <WorkflowsPage /> },
         { path: '/workflows/:id/builder', element: <WorkflowBuilderPage /> },
         { path: '/executions', element: <ExecutionsPage /> },
