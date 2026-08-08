@@ -19,11 +19,15 @@ router.get('/sso', authenticate, async (req, res, next) => {
       return res.status(401).json({ error: 'User not found' })
     }
 
+    const baseUrl = process.env.TRYPOST_BASE_URL || 'http://139.99.134.4:8001'
+    const secret = process.env.TRYPOST_ADMIN_API_KEY || 'leadflower-secret-123'
+    
     // Ping the Trypost server to provision the user and get a magic login link
-    const response = await axios.post('http://139.99.134.4:8001/sso/provision', {
-      secret: 'leadflower-secret-123',
+    const response = await axios.post(`${baseUrl}/sso/provision`, {
+      secret: secret,
       email: user.email,
-      name: user.displayName || 'User'
+      name: user.displayName || 'User',
+      organizationId: auth.organizationId
     })
 
     res.json({ url: response.data.url })
@@ -36,7 +40,8 @@ router.get('/sso', authenticate, async (req, res, next) => {
 router.post('/verify', async (req, res, next) => {
   try {
     const { email, password, secret } = req.body
-    if (secret !== 'leadflower-secret-123') {
+    const expectedSecret = process.env.TRYPOST_ADMIN_API_KEY || 'leadflower-secret-123'
+    if (secret !== expectedSecret) {
       return res.status(401).json({ success: false })
     }
 
