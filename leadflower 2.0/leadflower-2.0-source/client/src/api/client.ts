@@ -1,5 +1,6 @@
 import axios, { AxiosError, AxiosRequestConfig, InternalAxiosRequestConfig } from 'axios'
 import type { Identifier, PageResult, UnknownRecord } from '../types'
+import { generateUUID } from '../utils/uuid'
 
 export class ApiError extends Error {
   status: number
@@ -36,7 +37,7 @@ api.interceptors.request.use((config) => {
   if (!['get', 'head', 'options'].includes(method)) {
     const token = cookie('lf_csrf')
     if (token) config.headers.set('X-CSRF-Token', decodeURIComponent(token))
-    if (!config.headers.has('Idempotency-Key')) config.headers.set('Idempotency-Key', crypto.randomUUID())
+    if (!config.headers.has('Idempotency-Key')) config.headers.set('Idempotency-Key', generateUUID())
   }
   return config
 })
@@ -49,7 +50,7 @@ function refreshSession(): Promise<void> {
     // A stale-rotation retry is still the same logical mutation. Reuse the key
     // so the server can safely deduplicate it just as it does the original API
     // request after refresh.
-    const idempotencyKey = crypto.randomUUID()
+    const idempotencyKey = generateUUID()
     const attempt = () => {
       const csrf = cookie('lf_csrf')
       return axios.post(`${apiBaseUrl}/auth/refresh`, undefined, {

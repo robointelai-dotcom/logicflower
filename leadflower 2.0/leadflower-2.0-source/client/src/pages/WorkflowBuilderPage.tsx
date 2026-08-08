@@ -11,7 +11,7 @@ import { useAuth } from '../auth/AuthContext'
 import { Alert, Button, ConfirmDialog, Field, LoadingState, Modal, StatusBadge } from '../components/ui'
 import { useAction } from '../hooks/useApi'
 import type { UnknownRecord, Workflow, WorkflowNodeData } from '../types'
-
+import { generateUUID } from '../utils/uuid'
 type FieldType = 'text' | 'number' | 'select' | 'textarea' | 'resource'
 type ResourceKind = 'connection' | 'channel' | 'destination'
 interface NodeField { key: string; label: string; type: FieldType; resource?: ResourceKind; providers?: string[]; placeholder?: string; hint?: string; options?: Array<{ value: string; label: string }> }
@@ -59,7 +59,7 @@ function SafeNode({ data, selected }: NodeProps<WorkflowNodeData>) {
 // kind. The server executes only the allow-listed `data.kind` value.
 const nodeTypes = { safeNode: SafeNode }
 
-function newId(prefix: string): string { return `${prefix.replace(/[^a-z]/g, '-')}-${crypto.randomUUID()}` }
+function newId(prefix: string): string { return `${prefix.replace(/[^a-z]/g, '-')}-${generateUUID()}` }
 
 function initialConfig(spec: NodeSpec): UnknownRecord {
   const config: UnknownRecord = {}
