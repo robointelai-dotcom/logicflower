@@ -21,28 +21,28 @@ interface NavItem {
 
 const sections: Array<{ label: string; items: NavItem[] }> = [
   { label: 'Engage', items: [
-    { label: 'Today', to: '/dashboard', icon: Sunrise, roles: ['owner', 'admin', 'operator', 'viewer'] },
-    { label: 'Inbox', to: '/inbox', icon: Inbox, roles: ['owner', 'admin', 'operator', 'viewer'] },
-    { label: 'Contacts', to: '/contacts', icon: Contact2, roles: ['owner', 'admin', 'operator', 'viewer'] },
-    { label: 'Pipeline', to: '/pipeline', icon: KanbanSquare, roles: ['owner', 'admin', 'operator', 'viewer'] },
-    { label: 'Booking', to: '/booking', icon: CalendarClock, roles: ['owner', 'admin', 'operator', 'viewer'] },
-    { label: 'Sequences', to: '/sequences', icon: Send, roles: ['owner', 'admin', 'operator', 'viewer'] },
-    { label: 'Social', to: '/social', icon: Megaphone, roles: ['owner', 'admin', 'operator', 'viewer'] },
-    { label: 'Auto Post', to: '/trypost', icon: Megaphone, roles: ['owner', 'admin', 'operator', 'viewer'] },
+    { label: 'Today', to: '/dashboard', icon: Sunrise, roles: ['owner', 'admin', 'operator', 'viewer', 'customer'] },
+    { label: 'Inbox', to: '/inbox', icon: Inbox, roles: ['owner', 'admin', 'operator', 'viewer', 'customer'] },
+    { label: 'Contacts', to: '/contacts', icon: Contact2, roles: ['owner', 'admin', 'operator', 'viewer', 'customer'] },
+    { label: 'Pipeline', to: '/pipeline', icon: KanbanSquare, roles: ['owner', 'admin', 'operator', 'viewer', 'customer'] },
+    { label: 'Booking', to: '/booking', icon: CalendarClock, roles: ['owner', 'admin', 'operator', 'viewer', 'customer'] },
+    { label: 'Sequences', to: '/sequences', icon: Send, roles: ['owner', 'admin', 'operator', 'viewer', 'customer'] },
+    { label: 'Social', to: '/social', icon: Megaphone, roles: ['owner', 'admin', 'operator', 'viewer', 'customer'] },
+    { label: 'Auto Post', to: '/trypost', icon: Megaphone, roles: ['owner', 'admin', 'operator', 'viewer', 'customer'] },
     { label: 'Calling', to: '/voice', icon: PhoneCall, roles: ['owner', 'admin', 'operator'] },
   ] },
   { label: 'Operate', items: [
-    { label: 'Platform overview', to: '/platform', icon: LayoutDashboard, roles: ['owner', 'admin', 'operator', 'viewer'] },
-    { label: 'Connections', to: '/connections', icon: Plug, roles: ['owner', 'admin', 'operator', 'viewer'] },
-    { label: 'Workflows', to: '/workflows', icon: WorkflowIcon, roles: ['owner', 'admin', 'operator', 'viewer'] },
-    { label: 'Executions', to: '/executions', icon: Activity, roles: ['owner', 'admin', 'operator', 'viewer'] },
-    { label: 'Batch jobs', to: '/batches', icon: Layers3, roles: ['owner', 'admin', 'operator', 'viewer'] },
+    { label: 'Platform overview', to: '/platform', icon: LayoutDashboard, roles: ['owner', 'admin', 'operator', 'viewer', 'customer'] },
+    { label: 'Connections', to: '/connections', icon: Plug, roles: ['owner', 'admin', 'operator', 'viewer', 'customer'] },
+    { label: 'Workflows', to: '/workflows', icon: WorkflowIcon, roles: ['owner', 'admin', 'operator', 'viewer', 'customer'] },
+    { label: 'Executions', to: '/executions', icon: Activity, roles: ['owner', 'admin', 'operator', 'viewer', 'customer'] },
+    { label: 'Batch jobs', to: '/batches', icon: Layers3, roles: ['owner', 'admin', 'operator', 'viewer', 'customer'] },
   ] },
   { label: 'Protect', items: [
-    { label: 'Monitoring', to: '/monitoring', icon: HeartPulse, roles: ['owner', 'admin', 'operator', 'viewer'] },
-    { label: 'Vault', to: '/vault', icon: Archive, roles: ['owner', 'admin', 'operator', 'viewer'] },
-    { label: 'Alerts', to: '/notifications', icon: Bell, roles: ['owner', 'admin', 'operator', 'viewer'] },
-    { label: 'Audit log', to: '/audit', icon: ClipboardList, roles: ['owner', 'admin', 'operator', 'viewer'] },
+    { label: 'Monitoring', to: '/monitoring', icon: HeartPulse, roles: ['owner', 'admin', 'operator', 'viewer', 'customer'] },
+    { label: 'Vault', to: '/vault', icon: Archive, roles: ['owner', 'admin', 'operator', 'viewer', 'customer'] },
+    { label: 'Alerts', to: '/notifications', icon: Bell, roles: ['owner', 'admin', 'operator', 'viewer', 'customer'] },
+    { label: 'Audit log', to: '/audit', icon: ClipboardList, roles: ['owner', 'admin', 'operator', 'viewer', 'customer'] },
   ] },
   { label: 'Manage', items: [
     { label: 'Reports & usage', to: '/reports', icon: BarChart3, roles: ['owner', 'admin', 'operator', 'viewer', 'billing'] },
@@ -116,7 +116,7 @@ export default function Shell() {
   const location = useLocation()
   const navigate = useNavigate()
   const role = session?.organization?.role ?? 'viewer'
-  const canViewOperations = ['owner', 'admin', 'operator', 'viewer'].includes(role)
+  const canViewOperations = ['owner', 'admin', 'operator', 'viewer', 'customer'].includes(role)
 
   React.useEffect(() => { setMobileOpen(false) }, [location.pathname])
 

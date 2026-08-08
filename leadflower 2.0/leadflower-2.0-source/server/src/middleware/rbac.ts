@@ -27,5 +27,5 @@ export function requireRole(...allowedRoles: MembershipRole[]) {
 
 export const canManageOrganization = requireRole('owner', 'admin')
 export const canOperate = requireRole('owner', 'admin', 'operator')
-export const canView = requireRole('owner', 'admin', 'operator', 'viewer', 'billing')
+export const canView = requireRole('owner', 'admin', 'operator', 'viewer', 'billing', 'customer')
 export const canManageBilling = requireRole('owner', 'billing')

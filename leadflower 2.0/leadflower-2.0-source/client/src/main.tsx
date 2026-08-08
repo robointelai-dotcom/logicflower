@@ -86,7 +86,7 @@ const router = createBrowserRouter([
     { path: '/connections/oauth/return', element: <OAuthReturnPage /> },
     { element: <Shell />, children: [
       { path: '/dashboard', element: <WorkspaceHome /> },
-      { element: <RoleRoute roles={['owner', 'admin', 'operator', 'viewer']} />, children: [
+      { element: <RoleRoute roles={['owner', 'admin', 'operator', 'viewer', 'customer']} />, children: [
         { path: '/connections', element: <ConnectionsPage /> },
         { path: '/platform', element: <DashboardPage /> },
         { path: '/booking', element: <BookingPagesPage /> },

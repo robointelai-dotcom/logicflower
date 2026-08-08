@@ -8,7 +8,7 @@ import { Schema, model } from 'mongoose'
  * organisation it means nothing — authority flows downward from the parent, and
  * never upward or sideways.
  */
-export const membershipRoles = ['agency_owner', 'owner', 'admin', 'operator', 'viewer', 'billing'] as const
+export const membershipRoles = ['agency_owner', 'owner', 'admin', 'operator', 'viewer', 'billing', 'customer'] as const
 export type MembershipRole = typeof membershipRoles[number]
 
 const MembershipSchema = new Schema({

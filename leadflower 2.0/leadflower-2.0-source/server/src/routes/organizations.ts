@@ -386,7 +386,7 @@ router.delete('/current/members/:membershipId', manage, asyncHandler(async (req,
   res.status(204).end()
 }))
 
-router.get('/current/audit', requireRole('owner', 'admin', 'operator', 'viewer'), asyncHandler(async (req, res) => {
+router.get('/current/audit', requireRole('owner', 'admin', 'operator', 'viewer', 'customer'), asyncHandler(async (req, res) => {
   const limit = pageLimit(req.query.limit)
   const cursor = decodeCursor(req.query.cursor)
   const query: Record<string, unknown> = { organizationId: currentOrganization(req) }

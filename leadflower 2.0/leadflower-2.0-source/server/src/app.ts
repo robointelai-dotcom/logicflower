@@ -46,7 +46,7 @@ import { deploymentWatchDecision } from './services/watchMode'
 import { keyringStatus } from './security/keyring'
 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS'])
-const operationalViewer = requireRole('owner', 'admin', 'operator', 'viewer')
+const operationalViewer = requireRole('owner', 'admin', 'operator', 'viewer', 'customer')
 const operationalOperator = requireRole('owner', 'admin', 'operator')
 const organizationManager = requireRole('owner', 'admin')
 const idempotentMutation = mutationGate(requireIdempotency)
@@ -99,7 +99,7 @@ function mountApi(app: express.Express, prefix: '/api/v1' | '/api'): void {
   app.use(`${prefix}/batches`, authenticate, csrfProtection, requireOrganization, tenantRateLimit, operationalViewer, mutationGate(operationalOperator), batchRoutes)
   app.use(`${prefix}/monitoring`, authenticate, csrfProtection, requireOrganization, tenantRateLimit, idempotentMutation, operationalViewer, mutationGate(operationalOperator), monitoringRoutes)
   app.use(`${prefix}/notifications`, authenticate, csrfProtection, requireOrganization, tenantRateLimit, idempotentMutation, operationalViewer, mutationGate(organizationManager), notificationRoutes)
-  app.use(`${prefix}/reports`, authenticate, csrfProtection, requireOrganization, tenantRateLimit, idempotentMutation, requireRole('owner', 'admin', 'operator', 'viewer', 'billing'), mutationGate(operationalOperator), reportRoutes)
+  app.use(`${prefix}/reports`, authenticate, csrfProtection, requireOrganization, tenantRateLimit, idempotentMutation, requireRole('owner', 'admin', 'operator', 'viewer', 'customer', 'billing'), mutationGate(operationalOperator), reportRoutes)
   app.use(`${prefix}/vault`, authenticate, csrfProtection, requireOrganization, tenantRateLimit, idempotentMutation, operationalViewer, mutationGate(operationalOperator), vaultRoutes)
   app.use(`${prefix}/artifacts`, authenticate, csrfProtection, requireOrganization, tenantRateLimit, operationalViewer, artifactRoutes)
   app.use(`${prefix}/webhooks`, webhookAccess, webhookRoutes)

@@ -22,7 +22,7 @@ async function loadTeam(): Promise<TeamData> {
   }), invitations: invitations.items.filter((invitation) => !invitation.acceptedAt && !invitation.revokedAt && (!invitation.expiresAt || new Date(invitation.expiresAt).getTime() > Date.now())) }
 }
 
-const roles: OrganizationRole[] = ['owner', 'admin', 'operator', 'viewer', 'billing']
+const roles: OrganizationRole[] = ['owner', 'admin', 'operator', 'viewer', 'billing', 'customer']
 
 export default function TeamPage() {
   const { session } = useAuth()
