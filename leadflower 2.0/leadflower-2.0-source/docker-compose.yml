@@ -1,4 +1,4 @@
-name: logicflower
+version: "3.8"
 
 services:
   mongo:
