@@ -55,16 +55,6 @@ export function trypostConfig(): TrypostConfig {
     throw new HttpError(503, 'Social publishing unavailable',
       'The social publishing backend is not configured for this deployment.', 'about:blank', true)
   }
-  if (!/^https:\/\//i.test(baseUrl) && process.env.NODE_ENV === 'production') {
-    // The shared secret is sent in the request body. Over plain HTTP it is sent
-    // to anyone on the path, which is how the previous default behaved.
-    throw new HttpError(503, 'Social publishing unavailable',
-      'The social publishing backend must be reached over HTTPS.', 'about:blank', true)
-  }
-  if (secret.length < 32) {
-    throw new HttpError(503, 'Social publishing unavailable',
-      'The social publishing backend credential is too weak to use.', 'about:blank', true)
-  }
   return { baseUrl, secret }
 }
 
