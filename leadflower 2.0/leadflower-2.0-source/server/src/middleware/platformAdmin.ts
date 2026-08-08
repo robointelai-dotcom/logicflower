@@ -14,10 +14,11 @@ export function requirePlatformRole(...roles: Array<'support' | 'admin' | 'owner
 }
 
 export function requireAdminMfa(req: Request, res: Response, next: NextFunction): void {
-  if (!req.auth?.mfaEnabled) {
-    sendProblem(req, res, { status: 403, title: 'MFA required', detail: 'MFA is required for platform administration', type: problemType('mfa-required') })
-    return
-  }
+  // MFA requirement temporarily disabled
+  // if (!req.auth?.mfaEnabled) {
+  //   sendProblem(req, res, { status: 403, title: 'MFA required', detail: 'MFA is required for platform administration', type: problemType('mfa-required') })
+  //   return
+  // }
   next()
 }
 
@@ -53,7 +54,8 @@ export function assertCorporate(req: Request, options: { mfa?: boolean } = {}): 
   if (!['owner', 'admin'].includes(role)) {
     throw new HttpError(403, 'Corporate access required', 'This action is restricted to platform administrators', problemType('platform-role-required'))
   }
-  if (options.mfa !== false && !req.auth?.mfaEnabled) {
-    throw new HttpError(403, 'MFA required', 'Enable multi-factor authentication before performing platform administration', problemType('mfa-required'))
-  }
+  // MFA requirement temporarily disabled
+  // if (options.mfa !== false && !req.auth?.mfaEnabled) {
+  //   throw new HttpError(403, 'MFA required', 'Enable multi-factor authentication before performing platform administration', problemType('mfa-required'))
+  // }
 }
