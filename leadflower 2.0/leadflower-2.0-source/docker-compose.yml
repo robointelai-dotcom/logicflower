@@ -64,9 +64,6 @@ services:
     environment:
       MONGO_URI: mongodb://mongo:27017/logicflower?replicaSet=rs0
       REDIS_URL: redis://redis:6379
-      APP_URL: http://localhost:8080
-      API_URL: http://localhost:8080
-      CORS_ORIGINS: http://localhost:8080
       GHL_REDIRECT_URI: http://localhost:8080/api/v1/connections/ghl/oauth/callback
       HUBSPOT_REDIRECT_URI: http://localhost:8080/api/v1/connections/hubspot/oauth/callback
       KLAVIYO_REDIRECT_URI: http://localhost:8080/api/v1/connections/klaviyo/oauth/callback
