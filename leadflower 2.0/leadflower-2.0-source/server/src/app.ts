@@ -47,6 +47,16 @@ import { keyringStatus } from './security/keyring'
 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS'])
 const operationalViewer = requireRole('owner', 'admin', 'operator', 'viewer', 'customer')
+/**
+ * The hierarchy surface, which is the ONLY way an agency reaches its console.
+ *
+ * `agency_owner` was absent from every guard in this file, so a user holding
+ * only that role was refused before reaching the console the role exists to
+ * grant — the role was defined, assignable, and unusable. It is admitted here
+ * and nowhere else: authority over clients is exercised by switching into a
+ * client, at which point the request is scoped and roled like any other.
+ */
+const hierarchyViewer = requireRole('agency_owner', 'owner', 'admin', 'operator', 'viewer', 'customer')
 const operationalOperator = requireRole('owner', 'admin', 'operator')
 const organizationManager = requireRole('owner', 'admin')
 const idempotentMutation = mutationGate(requireIdempotency)
@@ -117,14 +127,17 @@ function mountApi(app: express.Express, prefix: '/api/v1' | '/api'): void {
   // Public marketing content: unauthenticated by necessity, rate limited, and
   // read-only. Writes live on the authenticated router above.
   app.use(`${prefix}/public/content`, publicContentRouter)
-  app.use(`${prefix}/hierarchy`, authenticate, csrfProtection, requireOrganization, tenantRateLimit, operationalViewer, hierarchyRoutes)
+  app.use(`${prefix}/hierarchy`, authenticate, csrfProtection, requireOrganization, tenantRateLimit, idempotentMutation, hierarchyViewer, hierarchyRoutes)
   app.use(`${prefix}/booking`, authenticate, csrfProtection, requireOrganization, tenantRateLimit, idempotentMutation, operationalViewer, mutationGate(operationalOperator), bookingRoutes)
   // Unauthenticated by design: someone booking an appointment has no account.
   // Rate limited, addressed by an unguessable slug, organisation derived from
   // the matched page.
   app.use(`${prefix}/public/booking`, publicBookingRouter)
   app.use(`${prefix}/social`, authenticate, csrfProtection, requireOrganization, tenantRateLimit, idempotentMutation, operationalViewer, mutationGate(operationalOperator), socialRoutes)
-  app.use(`${prefix}/trypost`, tenantRateLimit, trypostRoutes)
+  // Provisioning an external social account is an administrative act against a
+  // third-party service, billed to the operator. It was previously reachable by
+  // any authenticated user of any role, with no organisation context at all.
+  app.use(`${prefix}/trypost`, authenticate, csrfProtection, requireOrganization, tenantRateLimit, organizationManager, trypostRoutes)
   app.use(`${prefix}/voice`, authenticate, csrfProtection, requireOrganization, tenantRateLimit, idempotentMutation, operationalViewer, mutationGate(operationalOperator), voiceRoutes)
   // Unauthenticated by design: a review widget renders on a customer's own
   // website and a reviewer has no session. Rate limited, scoped by an

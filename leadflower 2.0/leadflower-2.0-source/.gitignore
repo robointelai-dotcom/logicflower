@@ -12,3 +12,13 @@ data/
 uploads/
 tmp/
 
+
+# Deployment secrets. Never commit.
+trypost.env
+*.env
+!*.env.example
+
+# Build artefacts and source archives. The repository IS the source; a
+# committed zip or patch of it drifts from the tree and gets edited by mistake.
+*.zip
+*.patch

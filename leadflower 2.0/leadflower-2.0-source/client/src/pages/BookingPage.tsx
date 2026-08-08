@@ -5,6 +5,7 @@ import { Alert, Button, Card, EmptyState, Field, Modal, PageHeader, SkeletonRows
 import { HelpLink } from './HelpPage'
 import { useAction, useApi } from '../hooks/useApi'
 import type { UnknownRecord } from '../types'
+import { usePermissions } from '../hooks/usePermissions'
 
 interface WorkingWindow { weekday: number; startMinute: number; endMinute: number }
 interface PageRow extends UnknownRecord {
@@ -17,6 +18,7 @@ const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const clock = (minute: number) => `${String(Math.floor(minute / 60)).padStart(2, '0')}:${String(minute % 60).padStart(2, '0')}`
 
 export default function BookingPagesPage() {
+  const { canOperate } = usePermissions()
   const action = useAction()
   const [open, setOpen] = React.useState(false)
   const [form, setForm] = React.useState({
@@ -64,7 +66,7 @@ export default function BookingPagesPage() {
       eyebrow="Scheduling"
       title="Booking pages"
       description="Share a link. People pick a time that is genuinely free, and the confirmation runs through your sequences."
-      actions={<Button variant="primary" onClick={() => setOpen(true)}><Plus size={16} />
+      actions={canOperate && <Button variant="primary" onClick={() => setOpen(true)}><Plus size={16} />
     <HelpLink route="/booking" />New booking page</Button>}
     />
     {action.error && <Alert onDismiss={action.clear}>{action.error}</Alert>}
@@ -98,7 +100,7 @@ export default function BookingPagesPage() {
             </tr>)}</tbody>
           </table>
         </Card>
-          : <Card><EmptyState icon={<CalendarClock />} title="No booking pages" description="Create one and share the link. Availability is worked out from your hours and whatever is already in the calendar." action={<Button variant="primary" onClick={() => setOpen(true)}><Plus size={16} />New booking page</Button>} /></Card>}
+          : <Card><EmptyState icon={<CalendarClock />} title="No booking pages" description="Create one and share the link. Availability is worked out from your hours and whatever is already in the calendar." action={canOperate ? <Button variant="primary" onClick={() => setOpen(true)}><Plus size={16} />New booking page</Button> : undefined} /></Card>}
 
     <Modal
       open={open}

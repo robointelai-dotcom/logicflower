@@ -2,11 +2,11 @@ import { NextFunction, Request, Response } from 'express'
 import { Types } from 'mongoose'
 import { ACCESS_COOKIE, readCookie } from '../auth/cookies'
 import { verifyAccessToken } from '../auth/jwt'
-import Membership from '../models/Membership'
 import Organization from '../models/Organization'
 import Session from '../models/Session'
 import User from '../models/User'
 import { sendProblem, problemType} from '../http/problem'
+import { noteSupportGrantUse, resolveAccess } from '../services/hierarchy/access'
 
 function bearerToken(req: Request): string | undefined {
   const header = req.headers.authorization
@@ -45,20 +45,48 @@ export async function authenticate(req: Request, res: Response, next: NextFuncti
 
     const requestedOrganization = String(req.headers['x-organization-id'] || claims.org || '').trim() || undefined
     let role: import('../models/Membership').MembershipRole | undefined
+    let accessVia: 'membership' | 'agency' | 'support_grant' | 'corporate' | undefined
+    let accessExpiresAt: Date | null = null
     if (requestedOrganization) {
       if (!Types.ObjectId.isValid(requestedOrganization)) {
         sendProblem(req, res, { status: 400, title: 'Invalid organization', detail: 'Organization identifier is invalid', type: problemType('invalid-organization') })
         return
       }
-      const [membership, organization] = await Promise.all([
-        Membership.findOne({ organizationId: requestedOrganization, userId: claims.sub, status: 'active' }).lean(),
-        Organization.findOne({ _id: requestedOrganization, status: 'active' }).select('_id').lean(),
-      ])
-      if (!membership || !organization) {
-        sendProblem(req, res, { status: 403, title: 'Organization access denied', detail: 'No active membership for this organization', type: problemType('organization-access-denied') })
+      const organization = await Organization.findOne({ _id: requestedOrganization, status: 'active' }).select('_id').lean()
+      if (!organization) {
+        sendProblem(req, res, { status: 403, title: 'Organization access denied', detail: 'No access to this organization', type: problemType('organization-access-denied') })
         return
       }
-      role = membership.role as typeof role
+      /**
+       * Authority is RESOLVED, not assumed from a membership row.
+       *
+       * This used to require a direct Membership, which is why switching into
+       * an agency's client or a support grant never worked: `/hierarchy/switch`
+       * would confirm access and then every following request would be refused
+       * here. `resolveAccess` checks membership FIRST and only then considers
+       * agency, corporate and support authority, so a direct member's role is
+       * unchanged and nothing is widened for them.
+       *
+       * What is not relaxed: the request still carries exactly ONE
+       * organizationId, and every downstream query is scoped to it identically
+       * to a member's. Resolution decides whether you may act here, never how
+       * many tenants you may read.
+       */
+      const access = await resolveAccess({ userId: claims.sub, organizationId: requestedOrganization })
+      if (!access.granted) {
+        sendProblem(req, res, { status: 403, title: 'Organization access denied', detail: 'No access to this organization', type: problemType('organization-access-denied') })
+        return
+      }
+      role = access.role as typeof role
+      accessVia = access.via
+      accessExpiresAt = access.expiresAt ?? null
+
+      // A grant is metered per request, not per sign-in, so the customer's
+      // "what did support actually do" is a count they can weigh against the
+      // reason they were given.
+      if (access.via === 'support_grant') {
+        await noteSupportGrantUse({ userId: claims.sub, organizationId: requestedOrganization }).catch(() => undefined)
+      }
     }
     req.auth = {
       userId: claims.sub,
@@ -67,6 +95,8 @@ export async function authenticate(req: Request, res: Response, next: NextFuncti
       role,
       platformRole: (user.platformRole || 'user') as 'user' | 'support' | 'admin' | 'owner',
       mfaEnabled: Boolean(user.mfaEnabled),
+      accessVia,
+      accessExpiresAt,
     }
     next()
   } catch (error) {

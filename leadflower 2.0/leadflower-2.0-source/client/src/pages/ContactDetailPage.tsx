@@ -4,6 +4,7 @@ import { getOne, send } from '../api/client'
 import { Link, useParams } from '../router'
 import { Alert, Button, Card, EmptyState, Field, PageHeader, SkeletonRows, StatusBadge } from '../components/ui'
 import { useAction, useApi } from '../hooks/useApi'
+import { usePermissions } from '../hooks/usePermissions'
 
 interface ContactDetail {
   contact: {
@@ -45,6 +46,7 @@ function money(minorUnits: number, currency?: string | null): string {
 }
 
 export default function ContactDetailPage() {
+  const { canOperate } = usePermissions()
   const params = useParams()
   const contactId = params.id ?? ''
   const action = useAction()
@@ -132,7 +134,7 @@ export default function ContactDetailPage() {
         <Card title="Notes">
           <form className="form-stack" onSubmit={addNote}>
             <Field label="Add a note"><textarea rows={3} value={note} onChange={(event) => setNote(event.target.value)} placeholder="What happened?" /></Field>
-            <Button variant="primary" type="submit" busy={action.loading} disabled={!note.trim()}><StickyNote size={15} />Add note</Button>
+            <Button variant="primary" type="submit" busy={action.loading} disabled={!canOperate || !note.trim()}><StickyNote size={15} />Add note</Button>
           </form>
           {query.data.notes.map((entry) => <article key={entry.id} className="note">
             <p>{entry.body}</p>

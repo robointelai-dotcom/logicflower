@@ -6,6 +6,7 @@ import { Alert, Button, Card, EmptyState, Field, Modal, PageHeader, SkeletonRows
 import { HelpLink } from './HelpPage'
 import { useAction, useApi } from '../hooks/useApi'
 import type { UnknownRecord } from '../types'
+import { usePermissions } from '../hooks/usePermissions'
 
 interface BoardDeal {
   id: string
@@ -46,6 +47,7 @@ function money(minorUnits: number, currency: string): string {
 }
 
 export default function PipelinePage() {
+  const { canOperate } = usePermissions()
   const action = useAction()
   const [pipelineId, setPipelineId] = React.useState('')
   const [dragging, setDragging] = React.useState<string | null>(null)
@@ -145,7 +147,7 @@ export default function PipelinePage() {
         </select>}
         {pipelineId && <Button onClick={openStageEditor}><Settings2 size={15} />
     <HelpLink route="/pipeline" />Edit stages</Button>}
-        <Button variant="primary" disabled={!pipelineId} onClick={() => setOpen(true)}><Plus size={16} />New deal</Button>
+        {canOperate && <Button variant="primary" disabled={!pipelineId} onClick={() => setOpen(true)}><Plus size={16} />New deal</Button>}
       </>}
     />
     {action.error && <Alert onDismiss={action.clear}>{action.error}</Alert>}
@@ -157,7 +159,7 @@ export default function PipelinePage() {
           icon={<GitBranch />}
           title="No pipelines yet"
           description="A pipeline is the set of stages your work moves through. Set up your workspace to get one written for your trade, or create your own."
-          action={<Button variant="primary" onClick={() => setNewPipelineOpen(true)}><Plus size={16} />Create a pipeline</Button>}
+          action={canOperate ? <Button variant="primary" onClick={() => setNewPipelineOpen(true)}><Plus size={16} />Create a pipeline</Button> : undefined}
         /></Card>
           : <div className="kanban">
             {stages.map((stage) => <section

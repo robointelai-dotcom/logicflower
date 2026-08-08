@@ -8,6 +8,10 @@ import Conversation from '../models/Conversation'
 import { asyncHandler, HttpError, problemType } from '../http/problem'
 import { requireOrganizationId } from '../types/authenticatedRequest'
 import { recordAudit } from '../services/audit'
+import { switchSessionOrganization } from '../auth/sessionService'
+import { assertCorporate } from '../middleware/platformAdmin'
+import { createAgency, provisionClient } from '../services/hierarchy/provisioning'
+import { sendInvitationEmail } from '../services/email'
 import {
   agencyContextFor,
   allAgencies,
@@ -38,10 +42,16 @@ function platformRole(req: any): string {
   return String(req.auth?.platformRole || 'user')
 }
 
-function requireCorporate(req: any): void {
-  if (!['owner', 'admin'].includes(platformRole(req))) {
-    throw new HttpError(403, 'Corporate access required', 'This view is restricted to platform administrators')
-  }
+/**
+ * Corporate authority.
+ *
+ * Reads of the estate identify every tenant on the platform, and creating an
+ * agency creates authority over other people's workspaces. Both now require the
+ * same second factor `/admin` has always required — previously neither did, so
+ * a stolen platform-owner password was refused at `/admin` and admitted here.
+ */
+function requireCorporate(req: any, options: { mfa?: boolean } = {}): void {
+  assertCorporate(req, { mfa: options.mfa ?? true })
 }
 
 /**
@@ -138,9 +148,12 @@ router.post('/corporate/agencies', asyncHandler(async (req, res) => {
   requireCorporate(req)
   const name = String(req.body?.name || '').trim().slice(0, 200)
   if (!name) throw new HttpError(400, 'Name required', 'An agency name is required')
-  const created: any = await Organization.create({ name, kind: 'agency', parentOrganizationId: null })
+  // `slug` and `createdBy` are both required by the schema and were both
+  // absent here, so this endpoint could never once have succeeded. Built
+  // through the provisioning service so the omission cannot recur.
+  const created: any = await createAgency({ name, createdBy: String(req.auth?.userId || '') })
   await recordAudit({ req, organizationId: String(created._id), action: 'platform.agency_created', entityType: 'Organization', entityId: String(created._id), metadata: { name } })
-  res.status(201).json({ id: String(created._id), name, kind: 'agency' })
+  res.status(201).json({ id: String(created._id), name, slug: created.slug, kind: 'agency' })
 }))
 
 /* ------------------------------------------------------------------- agency */
@@ -176,18 +189,56 @@ router.post('/agency/clients', asyncHandler(async (req: any, res) => {
 
   const name = String(req.body?.name || '').trim().slice(0, 200)
   if (!name) throw new HttpError(400, 'Name required', 'A client name is required')
+  const ownerEmail = String(req.body?.ownerEmail || '').trim().toLowerCase()
+  if (!ownerEmail) throw new HttpError(400, 'Owner email required', 'A client needs an owner who can sign in; provide their email address')
 
-  const created: any = await Organization.create({
+  /**
+   * Provisioning is the whole set or none of it.
+   *
+   * This previously created an Organization alone — and did so without `slug`
+   * or `createdBy`, so it failed validation anyway. Had it succeeded it would
+   * have been worse: a workspace with no owner, no membership, no invitation
+   * and no subscription, which appears on the agency console as a client and
+   * cannot be signed into by anybody.
+   */
+  const result = await provisionClient({
     name,
-    kind: 'client',
+    createdBy: String(req.auth?.userId || ''),
     parentOrganizationId: context.agencyOrganizationId,
+    ownerEmail,
+    ownerName: req.body?.ownerName ? String(req.body.ownerName).slice(0, 120) : undefined,
+    // The agency built this workspace, so standing access is the honest
+    // default. The client can change it the moment they sign in.
+    agencyAccessMode: 'standing',
   })
+
+  // Delivery failure must not leave a provisioned-but-unreachable customer, so
+  // it is reported rather than swallowed; the invitation can be resent.
+  let invitationDelivered = true
+  try {
+    await sendInvitationEmail(ownerEmail, name, result.invitationToken)
+  } catch {
+    invitationDelivered = false
+  }
+
   await recordAudit({
-    req, organizationId: String(created._id), action: 'agency.client_created',
-    entityType: 'Organization', entityId: String(created._id),
-    metadata: { name, agencyOrganizationId: context.agencyOrganizationId },
+    req, organizationId: String(result.organization._id), action: 'agency.client_provisioned',
+    entityType: 'Organization', entityId: String(result.organization._id),
+    metadata: {
+      name, agencyOrganizationId: context.agencyOrganizationId,
+      ownerEmail, ownerExisted: result.ownerExisted, invitationDelivered,
+    },
   })
-  res.status(201).json({ id: String(created._id), name, kind: 'client' })
+  res.status(201).json({
+    id: String(result.organization._id),
+    name,
+    slug: result.organization.slug,
+    kind: 'client',
+    ownerUserId: result.ownerUserId,
+    ownerExisted: result.ownerExisted,
+    invitationDelivered,
+    invitationExpiresAt: result.invitationExpiresAt,
+  })
 }))
 
 /**
@@ -202,12 +253,32 @@ router.post('/switch', asyncHandler(async (req: any, res) => {
   const organizationId = objectId(req.body?.organizationId, 'organization')
   const access = await resolveAccess({ userId: String(req.auth?.userId || ''), organizationId })
   if (!access.granted) {
-    throw new HttpError(403, 'No access to that workspace', access.reason === 'support_access_not_granted'
-      ? 'Support access to this workspace has not been approved, or has expired.'
-      : 'You do not have access to that workspace.', problemType('workspace-access-denied'))
+    throw new HttpError(403, 'No access to that workspace', access.reason === 'agency_access_not_granted'
+      ? 'This client requires approval before their workspace can be opened. Request access and wait for them to approve it.'
+      : access.reason === 'support_access_not_granted'
+        ? 'Support access to this workspace has not been approved, or has expired.'
+        : 'You do not have access to that workspace.', problemType('workspace-access-denied'))
   }
 
   const organization: any = await Organization.findOne({ _id: organizationId }).select('name kind').lean()
+
+  /**
+   * Actually switch.
+   *
+   * This endpoint previously resolved access, wrote an audit record, returned
+   * a cheerful 200 — and changed nothing. The session still pointed at the
+   * original organisation, so "Open workspace" reloaded the workspace the user
+   * was already in. Rebinding the session is what makes the switch real: the
+   * access token is reissued with the new `org` claim and the session's
+   * current organisation is updated, so every subsequent request is scoped to
+   * the workspace the user asked for.
+   */
+  await switchSessionOrganization({
+    sessionId: String(req.auth?.sessionId || ''),
+    userId: String(req.auth?.userId || ''),
+    organizationId,
+    res,
+  })
   // Audited every time. "Which agency staff member opened which client, when"
   // needs an answer, and so does the same question about support.
   await recordAudit({
@@ -223,6 +294,62 @@ router.post('/switch', asyncHandler(async (req: any, res) => {
     role: access.role,
     expiresAt: access.expiresAt ?? null,
   })
+}))
+
+/**
+ * Ask a client for permission to enter their workspace.
+ *
+ * The console's "Request access" button used to call `/switch`, which under
+ * `on_request` simply returned 403 — the agency was told no, and the client was
+ * never told anybody had asked. This creates the request the client can then
+ * approve or refuse, on the same record and with the same expiry as a support
+ * grant, so there is one approval mechanism rather than two.
+ */
+router.post('/agency/clients/:clientId/request-access', asyncHandler(async (req: any, res) => {
+  const context = await agencyContextFor(String(req.auth?.userId || ''))
+  if (!context) throw new HttpError(403, 'Not an agency', 'This action is restricted to agency owners and admins')
+
+  const organizationId = objectId(req.params.clientId, 'organization')
+  const organization: any = await Organization.findOne({ _id: organizationId, kind: 'client' })
+    .select('name parentOrganizationId agencyAccessMode').lean()
+  if (!organization) throw new HttpError(404, 'Client not found', 'No client workspace with that identifier exists')
+  // An agency may only ask about its OWN clients. Without this an agency could
+  // request access to any workspace on the platform by identifier.
+  if (String(organization.parentOrganizationId || '') !== String(context.agencyOrganizationId)) {
+    throw new HttpError(403, 'Not your client', 'That workspace does not belong to your agency')
+  }
+  if (organization.agencyAccessMode !== 'on_request') {
+    throw new HttpError(409, 'Access already standing', 'This client has granted standing access; open the workspace directly')
+  }
+
+  const reason = String(req.body?.reason || '').trim().slice(0, 1_000)
+  if (!reason) throw new HttpError(400, 'Reason required', 'Say why you need to enter this workspace; the client sees this')
+
+  // One live request per agency user per workspace: repeated clicks should not
+  // bury the client under identical approvals.
+  const existing = await SupportAccessRequest.findOne({
+    organizationId, requestedBy: req.auth?.userId, status: 'pending',
+  }).select('_id createdAt').lean()
+  if (existing) {
+    return res.status(200).json({ id: String((existing as any)._id), status: 'pending', duplicate: true })
+  }
+
+  const created: any = await SupportAccessRequest.create({
+    organizationId,
+    requestedBy: req.auth?.userId,
+    reason,
+    status: 'pending',
+    dataAccessEnabled: false,
+    // Set on approval; a pending request grants nothing, and the real expiry
+    // is decided by the client when they approve.
+    expiresAt: new Date(Date.now() + MAX_SUPPORT_GRANT_HOURS * 3_600_000),
+  })
+  await recordAudit({
+    req, organizationId, action: 'agency.access_requested',
+    entityType: 'SupportAccessRequest', entityId: String(created._id),
+    metadata: { agencyOrganizationId: context.agencyOrganizationId, reason },
+  })
+  res.status(201).json({ id: String(created._id), status: 'pending', duplicate: false })
 }))
 
 /**

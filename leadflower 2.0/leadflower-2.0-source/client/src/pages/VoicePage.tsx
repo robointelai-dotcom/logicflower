@@ -6,6 +6,7 @@ import { Alert, Button, Card, EmptyState, Field, Modal, PageHeader, SkeletonRows
 import { HelpLink } from './HelpPage'
 import { useAction, useApi } from '../hooks/useApi'
 import type { UnknownRecord } from '../types'
+import { usePermissions } from '../hooks/usePermissions'
 
 interface VoiceStatus {
   providers: {
@@ -34,6 +35,7 @@ function clock(minutes: number): string {
 }
 
 export default function VoicePage() {
+  const { canOperate } = usePermissions()
   const action = useAction()
   const [open, setOpen] = React.useState(false)
   const [name, setName] = React.useState('')
@@ -55,7 +57,7 @@ export default function VoicePage() {
       eyebrow="AI voice"
       title="Calling"
       description="Every call passes suppression, consent, do-not-call and calling-window checks before it is placed."
-      actions={<Button variant="primary" onClick={() => setOpen(true)}>New agent</Button>}
+      actions={canOperate && <Button variant="primary" onClick={() => setOpen(true)}>New agent</Button>}
     />
     <HelpLink route="/voice" />
     {action.error && <Alert onDismiss={action.clear}>{action.error}</Alert>}

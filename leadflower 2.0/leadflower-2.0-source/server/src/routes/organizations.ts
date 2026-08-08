@@ -10,7 +10,7 @@ import AuditEvent from '../models/AuditEvent'
 import { asyncHandler, HttpError, parseBody } from '../http/problem'
 import { decodeCursor, encodeCursor, pageLimit } from '../http/cursor'
 import { requireIdempotency } from '../middleware/idempotency'
-import { requireRole } from '../middleware/rbac'
+import { canView, requireRole } from '../middleware/rbac'
 import { hashOpaqueToken, randomToken } from '../security/tokens'
 import { sendInvitationEmail } from '../services/email'
 import { recordAudit } from '../services/audit'
@@ -235,21 +235,60 @@ router.post('/:organizationId/switch', asyncHandler(async (req, res) => {
   res.json({ currentOrganizationId: organizationId, role: membership.role })
 }))
 
+/**
+ * The member list, at two different resolutions.
+ *
+ * This endpoint had NO role gate, and returned each member's email address,
+ * whether they had MFA enabled and when they last signed in — to anyone with a
+ * membership, including `viewer`, `billing` and `customer`. "Which of these
+ * accounts has no second factor" is precisely the question an attacker who has
+ * obtained one low-privilege login wants answered, and the API answered it.
+ *
+ * Administrators still see everything they need to administer. Everyone else
+ * sees who their colleagues are and what they do — a display name and a role,
+ * which is what a member list is FOR — and nothing about how those accounts are
+ * secured.
+ */
+function memberProjection(row: any, privileged: boolean) {
+  const user = row.userId || {}
+  const base = {
+    id: String(row._id),
+    user: { id: String(user._id || ''), displayName: user.displayName || null },
+    role: row.role,
+    joinedAt: row.joinedAt,
+  }
+  if (!privileged) return base
+  return {
+    ...base,
+    user: {
+      ...base.user,
+      email: user.email,
+      status: user.status,
+      mfaEnabled: Boolean(user.mfaEnabled),
+      lastLoginAt: user.lastLoginAt ?? null,
+    },
+  }
+}
+
 async function listMembers(req: Request, res: Response) {
+  const privileged = ['owner', 'admin'].includes(String(req.auth?.role || ''))
   const limit = pageLimit(req.query.limit)
   const cursor = decodeCursor(req.query.cursor)
   const query: Record<string, unknown> = { organizationId: currentOrganization(req), status: 'active' }
   if (cursor) query._id = { $lt: cursor }
+  // The security-relevant columns are not selected at all unless they will be
+  // returned, so they cannot leak through a later change to the projection.
+  const fields = privileged ? 'email displayName status mfaEnabled lastLoginAt' : 'displayName'
   const rows: any[] = await Membership.find(query).sort({ _id: -1 }).limit(limit + 1)
-    .populate('userId', 'email displayName status mfaEnabled lastLoginAt').lean()
+    .populate('userId', fields).lean()
   const hasMore = rows.length > limit
   res.json({
-    items: rows.slice(0, limit).map((row) => ({ id: String(row._id), user: row.userId, role: row.role, joinedAt: row.joinedAt })),
+    items: rows.slice(0, limit).map((row) => memberProjection(row, privileged)),
     nextCursor: hasMore ? encodeCursor(rows[limit - 1]._id) : null,
   })
 }
-router.get('/current/members', asyncHandler(listMembers))
-router.get('/:organizationId/members', requirePathOrganization, asyncHandler(listMembers))
+router.get('/current/members', canView, asyncHandler(listMembers))
+router.get('/:organizationId/members', requirePathOrganization, canView, asyncHandler(listMembers))
 
 async function createInvitation(req: Request, res: Response) {
   const body = parseBody(invitationSchema, req)

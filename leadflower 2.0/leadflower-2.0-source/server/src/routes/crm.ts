@@ -12,6 +12,7 @@ import SavedSegment from '../models/SavedSegment'
 import SendRecord from '../models/SendRecord'
 import SequenceEnrolment from '../models/SequenceEnrolment'
 import { asyncHandler, HttpError, problemType } from '../http/problem'
+import { contactWritableFields, creationTags } from '../services/crm/contactFields'
 import { decodeCursor, encodeCursor, pageLimit } from '../http/cursor'
 import { requireOrganizationId } from '../types/authenticatedRequest'
 import { recordAudit } from '../services/audit'
@@ -182,25 +183,57 @@ router.post('/contacts', asyncHandler(async (req, res) => {
     undefinedKeys = applied.undefinedKeys
   } catch (error) { asCustomFieldProblem(error) }
 
+  /**
+   * Every field the form collects is persisted.
+   *
+   * The create form asked for an address, a job title, a second phone number, a
+   * preferred contact method, a referrer and a lead score. The Contact schema
+   * declares all of them. This handler silently dropped all of them: the
+   * operator typed a job address, saw the contact save successfully, and the
+   * address was never written. Nothing surfaced the loss — no validation error,
+   * no warning — so a workspace could run for months believing it held data it
+   * had thrown away on every single contact it created.
+   *
+   * Written through the same builder the update path uses, so a field can no
+   * longer be accepted by one and ignored by the other.
+   */
+  const requestedTags = dedupeTags(creationTags(req.body))
   const created: any = await Contact.create({
     organizationId,
-    firstName: req.body?.firstName ? String(req.body.firstName).slice(0, 120) : undefined,
-    lastName: req.body?.lastName ? String(req.body.lastName).slice(0, 120) : undefined,
-    name: req.body?.name ? String(req.body.name).slice(0, 240) : undefined,
-    companyName: req.body?.companyName ? String(req.body.companyName).slice(0, 240) : undefined,
-    email: req.body?.email ? String(req.body.email).toLowerCase().slice(0, 320) : undefined,
-    phone: req.body?.phone ? String(req.body.phone).slice(0, 32) : undefined,
-    timezone: req.body?.timezone ? String(req.body.timezone).slice(0, 64) : undefined,
-    tags: Array.isArray(req.body?.tags) ? dedupeTags(req.body.tags.map(String)) : [],
+    ...contactWritableFields(req.body, { omit: ['lifecycleStatus', 'source'] }),
+    // Written empty and applied below, so the tags a contact is created with go
+    // through the same engine as tags added a minute later.
+    tags: [],
     lifecycleStatus: req.body?.lifecycleStatus || 'lead',
-    ownerUserId: req.body?.ownerUserId ? String(req.body.ownerUserId).slice(0, 64) : null,
     source: String(req.body?.source || 'manual').slice(0, 64),
     customFields,
   })
 
+  /**
+   * Tags at creation run their rules.
+   *
+   * The create form offered no tag input at all, so an operator had to save a
+   * contact and immediately edit it to tag them. Accepting tags here is only
+   * safe if they behave identically to tags added afterwards — writing the
+   * array straight onto the document would skip the rule engine, and a contact
+   * created with the tag that enrols them in a welcome sequence would silently
+   * not be enrolled. `applyTagChanges` is therefore the only writer.
+   */
+  let tagRulesFired = 0
+  if (requestedTags.length) {
+    const applied = await applyTagChanges({
+      organizationId,
+      contactId: String(created._id),
+      add: requestedTags,
+      userId: req.auth?.userId,
+      source: 'contact_create',
+    })
+    tagRulesFired = applied.rulesFired
+  }
+
   await recordActivity({ organizationId, contactId: String(created._id), type: 'contact.created', summary: 'Contact created', actorUserId: req.auth?.userId, metadata: { source: created.source } })
   await recordAudit({ req, organizationId, action: 'crm.contact_created', entityType: 'Contact', entityId: String(created._id) })
-  res.status(201).json({ id: String(created._id), undefinedKeys })
+  res.status(201).json({ id: String(created._id), undefinedKeys, tags: requestedTags, tagRulesFired })
 }))
 
 /**
@@ -287,46 +320,15 @@ router.patch('/contacts/:contactId', asyncHandler(async (req, res) => {
   const contactId = objectId(req.params.contactId, 'contact')
   const definitions = await definitionsFor(organizationId)
 
-  const update: Record<string, unknown> = {}
-  for (const field of [
-    'firstName', 'lastName', 'name', 'companyName', 'timezone', 'source',
-    'addressLine1', 'addressLine2', 'city', 'region', 'postalCode', 'country',
-    'jobTitle', 'secondaryPhone', 'referredBy', 'nextActionNote',
-  ] as const) {
-    if (req.body?.[field] !== undefined) update[field] = String(req.body[field]).slice(0, 240)
-  }
-  if (req.body?.email !== undefined) update.email = String(req.body.email).toLowerCase().slice(0, 320)
-  if (req.body?.phone !== undefined) update.phone = String(req.body.phone).slice(0, 32)
-  if (req.body?.lifecycleStatus !== undefined) update.lifecycleStatus = String(req.body.lifecycleStatus)
-  if (req.body?.ownerUserId !== undefined) update.ownerUserId = req.body.ownerUserId ? String(req.body.ownerUserId).slice(0, 64) : null
+  // Built from the same definition the create path uses, so a field cannot be
+  // writable on one and silently dropped on the other.
+  const update: Record<string, unknown> = contactWritableFields(req.body)
   // Tags are NOT set through this route. Replacing the array wholesale would
   // skip the rule engine entirely, so a tag added here would fire no
   // automation — the exact bug that makes an operator distrust their own
   // configuration. Use the tag endpoints below.
   if (req.body?.tags !== undefined) {
     throw new HttpError(400, 'Use the tag endpoints', 'Tags drive automation and must be changed through /crm/contacts/:id/tags so their rules run.', problemType('contact-tags-via-tag-endpoint'))
-  }
-  if (req.body?.leadScore !== undefined) {
-    const score = req.body.leadScore === null ? null : Number(req.body.leadScore)
-    if (score !== null && (!Number.isFinite(score) || score < 0 || score > 100)) {
-      throw new HttpError(400, 'Invalid lead score', 'Lead score must be a number between 0 and 100, or null')
-    }
-    update.leadScore = score
-  }
-  if (req.body?.nextActionAt !== undefined) {
-    if (req.body.nextActionAt === null) update.nextActionAt = null
-    else {
-      const nextAction = new Date(String(req.body.nextActionAt))
-      if (Number.isNaN(nextAction.getTime())) throw new HttpError(400, 'Invalid date', 'nextActionAt must be a valid date')
-      update.nextActionAt = nextAction
-    }
-  }
-  if (req.body?.preferredContactMethod !== undefined) {
-    const method = req.body.preferredContactMethod
-    if (method !== null && !['email', 'phone', 'sms', 'whatsapp'].includes(String(method))) {
-      throw new HttpError(400, 'Invalid contact method', 'Preferred contact method must be email, phone, sms, whatsapp, or null')
-    }
-    update.preferredContactMethod = method
   }
   if (req.body?.companyId !== undefined) {
     if (req.body.companyId === null) update.companyId = null

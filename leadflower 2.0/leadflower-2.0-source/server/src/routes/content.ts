@@ -8,6 +8,7 @@ import { asyncHandler, HttpError, problemType } from '../http/problem'
 import { pageLimit } from '../http/cursor'
 import { recordAudit } from '../services/audit'
 import { escapeHtml, renderMarkdown, slugify } from '../services/content/markdown'
+import { assertCorporate } from '../middleware/platformAdmin'
 
 /**
  * The public marketing site's content and search configuration.
@@ -31,11 +32,18 @@ function objectId(value: unknown, label: string): string {
   return id
 }
 
-/** Only the platform operator edits the public website. */
-function requireCorporate(req: any): void {
-  if (!['owner', 'admin'].includes(String(req.auth?.platformRole || 'user'))) {
-    throw new HttpError(403, 'Corporate access required', 'Only platform administrators can edit the public website')
-  }
+/**
+ * Only the platform operator edits the public website, and only with a second
+ * factor. Reads of the admin blog list are corporate-only but do not demand
+ * MFA; anything that CHANGES what the public sees does.
+ */
+function requireCorporate(req: any, options: { mfa?: boolean } = {}): void {
+  assertCorporate(req, { mfa: options.mfa ?? false })
+}
+
+/** Corporate authority plus a second factor, for writes. */
+function requireCorporateWrite(req: any): void {
+  assertCorporate(req, { mfa: true })
 }
 
 async function settings() {
@@ -68,7 +76,7 @@ router.get('/posts', asyncHandler(async (req, res) => {
 }))
 
 router.post('/posts', asyncHandler(async (req: any, res) => {
-  requireCorporate(req)
+  requireCorporateWrite(req)
   const title = String(req.body?.title || '').trim().slice(0, 200)
   if (!title) throw new HttpError(400, 'Title required', 'A post needs a title')
   const slug = slugify(req.body?.slug || title)
@@ -100,7 +108,7 @@ router.get('/posts/:postId', asyncHandler(async (req, res) => {
 }))
 
 router.patch('/posts/:postId', asyncHandler(async (req: any, res) => {
-  requireCorporate(req)
+  requireCorporateWrite(req)
   const postId = objectId(req.params.postId, 'post')
   // tenant-safe: platform-owned marketing content
   const existing: any = await BlogPost.findOne({ _id: postId }).select('status slug').lean()
@@ -140,7 +148,7 @@ router.patch('/posts/:postId', asyncHandler(async (req: any, res) => {
 }))
 
 router.post('/posts/:postId/status', asyncHandler(async (req: any, res) => {
-  requireCorporate(req)
+  requireCorporateWrite(req)
   const postId = objectId(req.params.postId, 'post')
   const status = String(req.body?.status || '')
   if (!['draft', 'scheduled', 'published', 'archived'].includes(status)) throw new HttpError(400, 'Invalid status', 'Status must be draft, scheduled, published or archived')
@@ -169,7 +177,7 @@ router.post('/posts/:postId/status', asyncHandler(async (req: any, res) => {
 }))
 
 router.post('/posts/:postId/duplicate', asyncHandler(async (req: any, res) => {
-  requireCorporate(req)
+  requireCorporateWrite(req)
   const postId = objectId(req.params.postId, 'post')
   // tenant-safe: platform-owned marketing content
   const post: any = await BlogPost.findOne({ _id: postId }).lean()
@@ -188,7 +196,7 @@ router.post('/posts/:postId/duplicate', asyncHandler(async (req: any, res) => {
 }))
 
 router.delete('/posts/:postId', asyncHandler(async (req, res) => {
-  requireCorporate(req)
+  requireCorporateWrite(req)
   const postId = objectId(req.params.postId, 'post')
   // tenant-safe: platform-owned marketing content
   const result = await BlogPost.deleteOne({ _id: postId })
@@ -206,7 +214,7 @@ router.get('/settings', asyncHandler(async (req, res) => {
 }))
 
 router.put('/settings', asyncHandler(async (req: any, res) => {
-  requireCorporate(req)
+  requireCorporateWrite(req)
   const update: Record<string, unknown> = { updatedBy: req.auth?.userId }
   for (const field of ['siteTitle', 'siteDescription', 'titleTemplate', 'organizationName', 'defaultSocialImageUrl', 'searchConsoleVerification'] as const) {
     if (req.body?.[field] !== undefined) update[field] = String(req.body[field]).slice(0, 500)
@@ -242,7 +250,7 @@ router.get('/redirects', asyncHandler(async (req, res) => {
 }))
 
 router.post('/redirects', asyncHandler(async (req: any, res) => {
-  requireCorporate(req)
+  requireCorporateWrite(req)
   const fromPath = String(req.body?.fromPath || '').trim()
   const toPath = String(req.body?.toPath || '').trim()
   for (const [label, value] of [['fromPath', fromPath], ['toPath', toPath]] as const) {
@@ -269,7 +277,7 @@ router.post('/redirects', asyncHandler(async (req: any, res) => {
 }))
 
 router.delete('/redirects/:redirectId', asyncHandler(async (req, res) => {
-  requireCorporate(req)
+  requireCorporateWrite(req)
   const redirectId = objectId(req.params.redirectId, 'redirect')
   // tenant-safe: platform-owned marketing site configuration
   await Redirect.deleteOne({ _id: redirectId })

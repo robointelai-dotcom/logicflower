@@ -6,6 +6,7 @@ import { Alert, Button, Card, EmptyState, Field, Modal, PageHeader, SkeletonRows
 import { HelpLink } from './HelpPage'
 import { useAction, useApi } from '../hooks/useApi'
 import type { UnknownRecord } from '../types'
+import { usePermissions } from '../hooks/usePermissions'
 
 interface SequenceRow extends UnknownRecord {
   id: string
@@ -23,6 +24,7 @@ interface OperationsHealth {
 }
 
 export default function SequencesPage() {
+  const { canOperate } = usePermissions()
   const action = useAction()
   const [open, setOpen] = React.useState(false)
   const [form, setForm] = React.useState({ name: '', description: '' })
@@ -47,7 +49,7 @@ export default function SequencesPage() {
       eyebrow="Follow-up engine"
       title="Sequences"
       description="Multi-step follow-up that waits reliably, respects quiet hours and stops the moment someone replies."
-      actions={<Button variant="primary" onClick={() => setOpen(true)}><Plus size={16} />
+      actions={canOperate && <Button variant="primary" onClick={() => setOpen(true)}><Plus size={16} />
     <HelpLink route="/sequences" />New sequence</Button>}
     />
     {action.error && <Alert onDismiss={action.clear}>{action.error}</Alert>}
@@ -91,7 +93,7 @@ export default function SequencesPage() {
             </tr>)}</tbody>
           </table>
         </Card>
-          : <Card><EmptyState icon={<Send />} title="No sequences yet" description="A sequence is a series of timed messages that stops automatically when someone replies." action={<Button variant="primary" onClick={() => setOpen(true)}><Plus size={16} />New sequence</Button>} /></Card>}
+          : <Card><EmptyState icon={<Send />} title="No sequences yet" description="A sequence is a series of timed messages that stops automatically when someone replies." action={canOperate ? <Button variant="primary" onClick={() => setOpen(true)}><Plus size={16} />New sequence</Button> : undefined} /></Card>}
 
     {query.data?.some((sequence) => sequence.status !== 'active' && !sequence.publishedVersionId) && <Card>
       <p className="muted"><AlertTriangle size={14} /> A sequence needs published steps before it can be activated. Open it to add them.</p>

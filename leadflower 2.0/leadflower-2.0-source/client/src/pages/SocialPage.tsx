@@ -5,6 +5,7 @@ import { Alert, Button, Card, EmptyState, Field, Modal, PageHeader, SkeletonRows
 import { HelpLink } from './HelpPage'
 import { useAction, useApi } from '../hooks/useApi'
 import type { UnknownRecord } from '../types'
+import { usePermissions } from '../hooks/usePermissions'
 
 interface PlatformProfile {
   platform: string
@@ -32,6 +33,7 @@ interface ReviewRow extends UnknownRecord {
 }
 
 export default function SocialPage() {
+  const { canOperate } = usePermissions()
   const action = useAction()
   const [open, setOpen] = React.useState(false)
   const [form, setForm] = React.useState({ caption: '', accountIds: [] as string[], scheduledFor: '' })
@@ -75,7 +77,7 @@ export default function SocialPage() {
       eyebrow="Social & reviews"
       title="Social"
       description="Compose once, schedule everywhere, and collect reviews that feed a widget on your site."
-      actions={<Button variant="primary" onClick={() => setOpen(true)}><Plus size={16} />
+      actions={canOperate && <Button variant="primary" onClick={() => setOpen(true)}><Plus size={16} />
     <HelpLink route="/social" />New post</Button>}
     />
     {action.error && <Alert onDismiss={action.clear}>{action.error}</Alert>}

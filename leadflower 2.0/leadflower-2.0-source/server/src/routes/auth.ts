@@ -17,6 +17,7 @@ import { hashOpaqueToken, randomToken } from '../security/tokens'
 import { clearSessionCookies, readCookie, REFRESH_COOKIE } from '../auth/cookies'
 import { createSession, revokeSession, rotateSession } from '../auth/sessionService'
 import { recordAudit } from '../services/audit'
+import { slugify } from '../services/hierarchy/provisioning'
 import { sendPasswordResetEmail } from '../services/email'
 import pino from '../logger'
 import { csrfProtection } from '../middleware/csrf'
@@ -69,11 +70,6 @@ const loginSchema = z.object({
 
 const forgotSchema = z.object({ email: z.string().email().max(254).transform((email) => email.trim().toLowerCase()) }).strict()
 const resetSchema = z.object({ token: z.string().min(32).max(300), password: strongPasswordSchema() }).strict()
-
-function slugify(name: string): string {
-  const base = name.normalize('NFKD').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 45) || 'organization'
-  return `${base}-${randomToken(5).toLowerCase()}`
-}
 
 async function userResponse(user: any, organizationId?: string) {
   // tenant-safe: scoped to the authenticated user across their own organisations, not to a single organisation

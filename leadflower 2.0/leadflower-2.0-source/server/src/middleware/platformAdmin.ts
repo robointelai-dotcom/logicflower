@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from 'express'
 import Session from '../models/Session'
-import { sendProblem, problemType} from '../http/problem'
+import { HttpError, sendProblem, problemType} from '../http/problem'
 
 export function requirePlatformRole(...roles: Array<'support' | 'admin' | 'owner'>) {
   const allowed = new Set(roles)
@@ -31,4 +31,29 @@ export async function requireRecentAuthentication(req: Request, res: Response, n
     }
     next()
   } catch (error) { next(error) }
+}
+
+/**
+ * Corporate authority, asserted from inside a handler.
+ *
+ * `/admin` is mounted behind `requireAdminMfa`, so every route on it demands a
+ * second factor. The Corporate Estate views on `/hierarchy/corporate/*` and the
+ * public website editor on `/content/*` are equally privileged — they read the
+ * whole estate and publish to the operator's own domain — but each rolled its
+ * own inline platform-role check and neither required MFA. A platform owner
+ * with a stolen password could not touch `/admin`, and could edit the marketing
+ * site and enumerate every tenant.
+ *
+ * Throwing rather than middleware because these routers mix public, member and
+ * corporate endpoints on one mount, so the requirement belongs on the handlers
+ * that need it rather than on the router.
+ */
+export function assertCorporate(req: Request, options: { mfa?: boolean } = {}): void {
+  const role = String(req.auth?.platformRole || 'user')
+  if (!['owner', 'admin'].includes(role)) {
+    throw new HttpError(403, 'Corporate access required', 'This action is restricted to platform administrators', problemType('platform-role-required'))
+  }
+  if (options.mfa !== false && !req.auth?.mfaEnabled) {
+    throw new HttpError(403, 'MFA required', 'Enable multi-factor authentication before performing platform administration', problemType('mfa-required'))
+  }
 }

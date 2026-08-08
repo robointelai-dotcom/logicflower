@@ -8,11 +8,23 @@ import { asyncHandler, HttpError, parseBody } from '../http/problem'
 import { decodeCursor, encodeCursor, pageLimit } from '../http/cursor'
 import { requireAdminMfa, requirePlatformRole, requireRecentAuthentication } from '../middleware/platformAdmin'
 import { requireIdempotency } from '../middleware/idempotency'
+import adminPackageRoutes from './adminPackages'
+import adminCustomerRoutes from './adminCustomers'
 import { recordAudit } from '../services/audit'
 
 const router = Router()
 router.use(requirePlatformRole('admin', 'owner'))
 router.use(requireAdminMfa)
+
+/**
+ * SaaS administration.
+ *
+ * Mounted here rather than at the top level so both inherit the platform-role
+ * and MFA guards above. A separate mount would mean a separate copy of those
+ * guards, and two copies of a security check drift.
+ */
+router.use('/packages', adminPackageRoutes)
+router.use('/customers', adminCustomerRoutes)
 
 router.get('/overview', asyncHandler(async (_req, res) => {
   const [organizations, users, memberships] = await Promise.all([

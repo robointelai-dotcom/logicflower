@@ -6,6 +6,7 @@ import { Alert, Button, Card, EmptyState, Field, Modal, PageHeader, SkeletonRows
 import { HelpLink } from './HelpPage'
 import { useAction, useApi } from '../hooks/useApi'
 import type { UnknownRecord } from '../types'
+import { usePermissions } from '../hooks/usePermissions'
 
 interface ContactRow extends UnknownRecord {
   id: string
@@ -32,6 +33,7 @@ export function displayName(contact: ContactRow): string {
 }
 
 export default function ContactsPage() {
+  const { canOperate } = usePermissions()
   const [search, setSearch] = React.useState('')
   const [applied, setApplied] = React.useState('')
   const [lifecycle, setLifecycle] = React.useState('')
@@ -89,7 +91,7 @@ export default function ContactsPage() {
       eyebrow="Micro-CRM"
       title="Contacts"
       description="Everyone this workspace can reach, wherever they came from."
-      actions={<Button variant="primary" onClick={() => setOpen(true)}><UserPlus size={16} />
+      actions={canOperate && <Button variant="primary" onClick={() => setOpen(true)}><UserPlus size={16} />
     <HelpLink route="/contacts" />New contact</Button>}
     />
     {action.error && <Alert onDismiss={action.clear}>{action.error}</Alert>}
@@ -130,7 +132,7 @@ export default function ContactsPage() {
             </tbody>
           </table>
         </Card>
-          : <Card><EmptyState icon={<Users />} title="No contacts yet" description="Add one by hand, import a CSV, or let a hosted form collect them." action={<Button variant="primary" onClick={() => setOpen(true)}><Plus size={16} />New contact</Button>} /></Card>}
+          : <Card><EmptyState icon={<Users />} title="No contacts yet" description="Add one by hand, import a CSV, or let a hosted form collect them." action={canOperate ? <Button variant="primary" onClick={() => setOpen(true)}><Plus size={16} />New contact</Button> : undefined} /></Card>}
 
     <Modal
       open={open}

@@ -5,6 +5,7 @@ import { Alert, Button, Card, EmptyState, Field, PageHeader, SkeletonRows } from
 import { HelpLink } from './HelpPage'
 import { useAction, useApi } from '../hooks/useApi'
 import type { UnknownRecord } from '../types'
+import { usePermissions } from '../hooks/usePermissions'
 
 interface ConversationRow extends UnknownRecord {
   id: string
@@ -28,6 +29,7 @@ interface ThreadMessage {
 }
 
 export default function InboxPage() {
+  const { canOperate } = usePermissions()
   const action = useAction()
   const [selected, setSelected] = React.useState<string | null>(null)
   const [reply, setReply] = React.useState('')
@@ -92,7 +94,7 @@ export default function InboxPage() {
                       <option value="sms">SMS</option>
                       <option value="email">Email</option>
                     </select>
-                    <Button variant="primary" type="submit" busy={action.loading} disabled={!reply.trim()}><Send size={15} />Send</Button>
+                    <Button variant="primary" type="submit" busy={action.loading} disabled={!canOperate || !reply.trim()}><Send size={15} />Send</Button>
                   </div>
                 </form>
               </>}

@@ -6,7 +6,17 @@ import { requireRole } from '../middleware/rbac'
 import { currentUsageEntitlement } from '../services/entitlements'
 
 const router = Router()
-router.use(requireRole('owner', 'admin', 'billing'))
+/**
+ * Usage is read by the Reports screen, which every operator can open.
+ *
+ * `operator` was excluded here, so the Reports page loaded, rendered, and then
+ * failed to retrieve the usage panel with a 403 the user could do nothing
+ * about. Usage is a count of the work the operator themselves performed; it is
+ * not billing data and revealing it to them discloses nothing they did not do.
+ * Read-only roles stay out: `viewer` and `customer` have no reason to see the
+ * workspace's consumption against its quota.
+ */
+router.use(requireRole('owner', 'admin', 'billing', 'operator'))
 
 router.get('/', asyncHandler(async (req, res) => {
   const organizationId = req.auth!.organizationId!

@@ -28,4 +28,6 @@ export function requireRole(...allowedRoles: MembershipRole[]) {
 export const canManageOrganization = requireRole('owner', 'admin')
 export const canOperate = requireRole('owner', 'admin', 'operator')
 export const canView = requireRole('owner', 'admin', 'operator', 'viewer', 'billing', 'customer')
+/** Read-only roles. Named so a reviewer can see at a glance who may only look. */
+export const readOnlyRoles: readonly MembershipRole[] = ['viewer', 'billing', 'customer']
 export const canManageBilling = requireRole('owner', 'billing')

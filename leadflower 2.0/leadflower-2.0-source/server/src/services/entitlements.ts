@@ -4,16 +4,14 @@ import Subscription from '../models/Subscription'
 import UsageCounter, { QuotaMetric, quotaMetrics } from '../models/UsageCounter'
 import UsageRecord from '../models/UsageRecord'
 import { evaluateUsageThresholds, overageCents, overageUnits } from './usageAlerts'
+import { packageForSubscription, resolveLimits } from './packages'
+import { PLAN_LIMITS, subscriptionPlans, SubscriptionPlan } from './planLimits'
 
-export const subscriptionPlans = ['free', 'starter', 'agency', 'scale'] as const
-export type SubscriptionPlan = typeof subscriptionPlans[number]
-
-export const PLAN_LIMITS: Readonly<Record<SubscriptionPlan, Readonly<Record<QuotaMetric, number>>>> = Object.freeze({
-  free: Object.freeze({ workflow_execution: 250, contact_processed: 1_000 }),
-  starter: Object.freeze({ workflow_execution: 10_000, contact_processed: 20_000 }),
-  agency: Object.freeze({ workflow_execution: 100_000, contact_processed: 100_000 }),
-  scale: Object.freeze({ workflow_execution: 1_000_000, contact_processed: 500_000 }),
-})
+// Re-exported so every existing importer of these names keeps working; they
+// now live in `planLimits.ts` so `packages.ts` can depend on them without a
+// cycle back through this module.
+export { PLAN_LIMITS, subscriptionPlans } from './planLimits'
+export type { SubscriptionPlan } from './planLimits'
 
 export interface PlanEntitlement {
   organizationId: string
@@ -96,15 +94,31 @@ function validStripePeriod(start: unknown, end: unknown, at: Date): start is Dat
   return start instanceof Date && end instanceof Date && Number.isFinite(start.getTime()) && Number.isFinite(end.getTime()) && start < end && start <= at && at < end
 }
 
-export function entitlementFromSubscription(organizationId: string, subscription: any, at = new Date()): PlanEntitlement {
+/**
+ * Turn a subscription into an entitlement.
+ *
+ * `packageDocument` is optional and defaults to null, which reproduces exactly
+ * the behaviour every existing customer has today: limits come from the
+ * built-in tier defaults. When a package IS supplied its quotas take effect,
+ * and a per-customer override on the subscription beats both. Nothing about
+ * eligibility, period selection or Stripe linkage changes — a package decides
+ * how much you get, never whether you are entitled to it.
+ */
+export function entitlementFromSubscription(
+  organizationId: string,
+  subscription: any,
+  at = new Date(),
+  packageDocument: any | null = null,
+): PlanEntitlement {
   const calendar = utcMonth(at)
   const plan: SubscriptionPlan = isPlan(subscription?.plan) ? subscription.plan : 'free'
   const status = String(subscription?.status || 'inactive')
+  const resolved = resolveLimits({ plan, subscription, packageDocument, at })
   if (plan === 'free') {
     return {
       organizationId, plan, subscriptionStatus: status, eligible: true,
       periodSource: 'calendar_month', periodStart: calendar.start, periodEnd: calendar.end,
-      limits: PLAN_LIMITS.free,
+      limits: resolved.limits,
     }
   }
   const linked = typeof subscription?.stripeSubscriptionId === 'string' && subscription.stripeSubscriptionId.startsWith('sub_')
@@ -117,7 +131,7 @@ export function entitlementFromSubscription(organizationId: string, subscription
     periodSource: periodValid ? 'stripe_period' : 'calendar_fallback',
     periodStart: periodValid ? subscription.currentPeriodStart : calendar.start,
     periodEnd: periodValid ? subscription.currentPeriodEnd : calendar.end,
-    limits: PLAN_LIMITS[plan],
+    limits: resolved.limits,
   }
 }
 
@@ -205,7 +219,10 @@ export async function reserveMeteredUsage(
 
 async function resolveMongoEntitlement(organizationId: string, at: Date, session: ClientSession): Promise<PlanEntitlement> {
   const subscription = await Subscription.findOne({ organizationId }).session(session).lean()
-  return entitlementFromSubscription(organizationId, subscription, at)
+  // Only queried when the subscription is actually pinned to a package, so an
+  // unmigrated customer costs no extra read on the reservation hot path.
+  const packageDocument = await packageForSubscription(subscription)
+  return entitlementFromSubscription(organizationId, subscription, at, packageDocument)
 }
 
 function mongoTransaction(session: ClientSession): UsageReservationTransaction {
@@ -283,7 +300,7 @@ export const mongoUsageReservationStore: UsageReservationStore = {
 
 export async function currentUsageEntitlement(organizationId: string, at = new Date()) {
   const subscription = await Subscription.findOne({ organizationId }).lean()
-  const entitlement = entitlementFromSubscription(organizationId, subscription, at)
+  const entitlement = entitlementFromSubscription(organizationId, subscription, at, await packageForSubscription(subscription))
   const rows: any[] = await UsageCounter.find({
     organizationId,
     periodStart: entitlement.periodStart,
@@ -308,7 +325,7 @@ export async function currentUsageEntitlement(organizationId: string, at = new D
 export async function assertUsageAvailable(organizationId: string, metric: QuotaMetric, quantity = 1, at = new Date()): Promise<PlanEntitlement> {
   if (!Number.isSafeInteger(quantity) || quantity < 1) throw new Error('Usage availability quantity must be a positive integer')
   const subscription = await Subscription.findOne({ organizationId }).lean()
-  const entitlement = entitlementFromSubscription(organizationId, subscription, at)
+  const entitlement = entitlementFromSubscription(organizationId, subscription, at, await packageForSubscription(subscription))
   assertEligible(entitlement)
   const counter: any = await UsageCounter.findOne({ organizationId, metric, periodStart: entitlement.periodStart }).select('used').lean()
   const used = Number(counter?.used || 0)
