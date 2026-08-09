@@ -113,7 +113,7 @@ function buildHtml(template, route) {
    *
    * SOCIAL_IMAGE_PATH overrides the default for a purpose-built card.
    */
-  const socialPath = process.env.SOCIAL_IMAGE_PATH || '/social-card.png'
+  const socialPath = process.env.SOCIAL_IMAGE_PATH || '/social-card.jpg'
   const socialImage = canonicalBase ? `${canonicalBase}${socialPath}` : ''
 
   const head = [
@@ -152,7 +152,7 @@ function buildHtml(template, route) {
         '@type': 'Organization',
         name: 'LogicFlower',
         url: canonicalBase,
-        logo: `${canonicalBase}/social-card.png`
+        logo: `${canonicalBase}/logo-512.png`
       },
       {
         '@type': 'WebSite',
@@ -209,6 +209,93 @@ function buildHtml(template, route) {
           <p>No. Pick your trade when you sign up and you get a pipeline, follow-up sequences and an inquiry form already written for it. Change anything you like afterwards.</p>
         </article>
       </section>`
+  } else if (routePath === '/features/missed-call-text-back') {
+    extraContent = `
+      <nav aria-label="breadcrumb">
+        <ol><li><a href="/">Home</a></li><li><a href="/features/missed-call-text-back/">Missed Call Text Back</a></li></ol>
+      </nav>
+      <section>
+        <h2>Never miss another lead</h2>
+        <p>When you cannot answer, they get a text within seconds. Stop losing work to the next name on their list.</p>
+        <h3>How it works</h3>
+        <ul>
+          <li>Customer calls and goes to voicemail.</li>
+          <li>LogicFlower instantly sends an SMS asking how you can help.</li>
+          <li>They reply, keeping them engaged until you are free.</li>
+        </ul>
+      </section>`
+  } else if (routePath === '/features/follow-up-automation') {
+    extraContent = `
+      <nav aria-label="breadcrumb">
+        <ol><li><a href="/">Home</a></li><li><a href="/features/follow-up-automation/">Follow-Up Automation</a></li></ol>
+      </nav>
+      <section>
+        <h2>Automated Follow-Up</h2>
+        <p>Multi-step follow-up by text and email that stops the moment somebody answers.</p>
+        <h3>Core Capabilities</h3>
+        <ul>
+          <li>Multi-channel touchpoints (SMS and Email).</li>
+          <li>Automatic pause on reply so you never spam an engaged lead.</li>
+          <li>Pre-built templates for common industries.</li>
+        </ul>
+      </section>`
+  } else if (routePath === '/solutions/crm-for-trades') {
+    extraContent = `
+      <nav aria-label="breadcrumb">
+        <ol><li><a href="/">Home</a></li><li><a href="/solutions/crm-for-trades/">CRM for Trades</a></li></ol>
+      </nav>
+      <section>
+        <h2>Built for Contractors and Trades</h2>
+        <p>Quote-to-job pipeline, follow-up that stops on reply, and a booking link.</p>
+        <h3>Industry Features</h3>
+        <ul>
+          <li>Drag-and-drop job pipeline (New Inquiry, Quoted, Scheduled, Done).</li>
+          <li>Automated appointment reminders.</li>
+          <li>Review collection requests post-job.</li>
+        </ul>
+      </section>`
+  } else if (routePath === '/compare/logicflower-vs-per-action-pricing') {
+    extraContent = `
+      <nav aria-label="breadcrumb">
+        <ol><li><a href="/">Home</a></li><li><a href="/compare/logicflower-vs-per-action-pricing/">Pricing Comparison</a></li></ol>
+      </nav>
+      <section>
+        <h2>Automation Without Per-Action Fees</h2>
+        <p>Most platforms bill for every workflow step. Work out what that costs you at your own volume.</p>
+        <h3>The LogicFlower Difference</h3>
+        <ul>
+          <li>Unlimited workflow steps.</li>
+          <li>Flat monthly rate for the Business plan.</li>
+          <li>No hidden costs as you scale your marketing.</li>
+        </ul>
+      </section>`
+  } else if (routePath.startsWith('/help/')) {
+    extraContent = `
+      <nav aria-label="breadcrumb">
+        <ol><li><a href="/">Home</a></li><li><a href="/help/">Help Center</a></li><li><a href="${routePath}/">${escapeHtml(title.split(' — ')[0])}</a></li></ol>
+      </nav>
+      <article>
+        <h2>${escapeHtml(title.split(' — ')[0])}</h2>
+        <p>${escapeHtml(description)}</p>
+        <section>
+          <h3>Guide Details</h3>
+          <p>This is a complete operational guide for workspace owners. For full interactive instructions, please enable JavaScript or view the application directly.</p>
+        </section>
+      </article>`
+  } else if (routePath === '/help') {
+    extraContent = `
+      <nav aria-label="breadcrumb">
+        <ol><li><a href="/">Home</a></li><li><a href="/help/">Help Center</a></li></ol>
+      </nav>
+      <section>
+        <h2>Help Center Categories</h2>
+        <ul>
+          <li>Workspace Setup</li>
+          <li>CRM and Contacts</li>
+          <li>Automation Sequences</li>
+          <li>Security and Billing</li>
+        </ul>
+      </section>`
   }
 
   // Inject a basic HTML shell into the root div so non-JS crawlers see the content
@@ -264,7 +351,7 @@ function main() {
 
   console.log(`prerender: wrote ${written} pages with correct metadata`)
   if (!process.env.SOCIAL_IMAGE_PATH && process.env.CANONICAL_ORIGIN) {
-    console.warn(`prerender: using ${'/social-card.png'} as the share card. Set SOCIAL_IMAGE_PATH to a purpose-built 1200x630 image for better results.`)
+    console.warn(`prerender: using ${'/social-card.jpg'} as the share card. Set SOCIAL_IMAGE_PATH to a purpose-built 1200x630 image for better results.`)
   }
   if (!process.env.CANONICAL_ORIGIN) {
     // Canonical URLs must be absolute to be useful. A relative one is ignored
