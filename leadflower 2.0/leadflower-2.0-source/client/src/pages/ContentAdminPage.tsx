@@ -6,7 +6,7 @@ import { Alert, Button, Card, EmptyState, Field, Modal, PageHeader, SkeletonRows
 import { useAction, useApi } from '../hooks/useApi'
 
 /**
- * The website control centre: articles, global search settings and redirects.
+ * The website control center: articles, global search settings and redirects.
  *
  * Corporate only. There is one public website and it belongs to the platform
  * operator, so nothing here is scoped to a workspace.

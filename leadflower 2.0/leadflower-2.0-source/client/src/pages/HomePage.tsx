@@ -144,7 +144,7 @@ const homeFaqs = [
   },
   {
     q: 'Do I need to be technical?',
-    a: 'No. Pick your trade when you sign up and you get a pipeline, follow-up sequences and an enquiry form already written for it. Change anything you like afterwards.',
+    a: 'No. Pick your trade when you sign up and you get a pipeline, follow-up sequences and an inquiry form already written for it. Change anything you like afterwards.',
   },
   {
     q: 'Can I really post to social media?',
@@ -421,7 +421,7 @@ export default function HomePage() {
     <section className="section" id="how">
       <div className="section-head">
         <p className="eyebrow">How it works</p>
-        <h2>From enquiry to booked job</h2>
+        <h2>From inquiry to booked job</h2>
         <p className="section-sub">You set it up once. It runs on every lead after that.</p>
       </div>
       <JourneyDiagram />
@@ -503,7 +503,7 @@ export default function HomePage() {
     {/* ---------------------------------------------------------------- cta */}
     <section className="final-cta">
       <h2>Stop losing work to a slow reply.</h2>
-      <p>Set it up once. Every enquiry after that gets answered while they are still deciding.</p>
+      <p>Set it up once. Every inquiry after that gets answered while they are still deciding.</p>
       <Link to={primaryHref} className="btn-primary-lg">{primaryLabel}<ArrowRight size={17} /></Link>
     </section>
 
@@ -514,12 +514,12 @@ export default function HomePage() {
       </div>
       <nav aria-label="Footer">
         {/* Internal links are how these pages get crawled at all. */}
-        <Link to="/features/missed-call-text-back">Missed call text back</Link>
-        <Link to="/features/follow-up-automation">Follow-up automation</Link>
-        <Link to="/solutions/crm-for-trades">CRM for trades</Link>
-        <Link to="/compare/logicflower-vs-per-action-pricing">Pricing comparison</Link>
+        <Link to="/features/missed-call-text-back/">Missed call text back</Link>
+        <Link to="/features/follow-up-automation/">Follow-up automation</Link>
+        <Link to="/solutions/crm-for-trades/">CRM for trades</Link>
+        <Link to="/compare/logicflower-vs-per-action-pricing/">Pricing comparison</Link>
         <Link to="/blog">Blog</Link>
-        <Link to="/help">Help centre</Link>
+        <Link to="/help">Help center</Link>
         <Link to="/login">Sign in</Link>
         <Link to="/signup">Start free</Link>
         <Link to="/status">System status</Link>

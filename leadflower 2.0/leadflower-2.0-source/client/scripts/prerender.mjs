@@ -46,8 +46,8 @@ function escapeHtml(value) {
  * that reads both. A page missing here is a page whose social preview is wrong.
  */
 const HELP_ARTICLES = [
-  ['what-is-logicflower', 'What LogicFlower does, in one page', 'It answers every enquiry quickly, keeps following up, and stops the moment they reply.'],
-  ['setting-up-your-workspace', 'Setting up your workspace', 'One choice creates your pipeline, fields, follow-up and enquiry form.'],
+  ['what-is-logicflower', 'What LogicFlower does, in one page', 'It answers every inquiry quickly, keeps following up, and stops the moment they reply.'],
+  ['setting-up-your-workspace', 'Setting up your workspace', 'One choice creates your pipeline, fields, follow-up and inquiry form.'],
   ['today-screen', 'The Today screen', 'What needs a person, and what is running without one.'],
   ['inbox-and-replies', 'The inbox, and what a reply does', 'One thread per person — and a reply stops all follow-up to them.'],
   ['contacts-and-fields', 'Adding a contact, and every field on it', 'What a contact record holds, and why an email or phone is required.'],
@@ -84,7 +84,7 @@ const ROUTES = [
     'Reply to every lead in seconds with automated SMS and email follow-up, a simple CRM, appointment booking and review collection—without per-action fees.'],
   ['/blog', 'Blog — LogicFlower',
     'Practical writing about follow-up, booking and reputation for small businesses.'],
-  ['/help', 'Help centre — LogicFlower',
+  ['/help', 'Help center — LogicFlower',
     'How everything works, written for a business owner rather than an engineer.'],
   ...LANDING_PAGES,
   ...HELP_ARTICLES.map(([slug, title, description]) => [`/help/${slug}`, `${title} — LogicFlower help`, description]),
@@ -143,19 +143,51 @@ function buildHtml(template, route) {
   html = html.replace(/<title>[\s\S]*?<\/title>/i, '')
   html = html.replace(/<meta\s+name="description"[^>]*>/i, '')
   html = html.replace(/<meta\s+(?:property|name)="(?:og:|twitter:)[^>]*>/ig, '')
-  html = html.replace('</head>', `  ${head}\n  </head>`)
+
+  // Generate Structured Data
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'Organization',
+        name: 'LogicFlower',
+        url: canonicalBase,
+        logo: `${canonicalBase}/favicon.svg`
+      },
+      {
+        '@type': 'WebSite',
+        name: 'LogicFlower',
+        url: canonicalBase
+      }
+    ]
+  }
+
+  if (routePath === '/') {
+    jsonLd['@graph'].push({
+      '@type': 'SoftwareApplication',
+      name: 'LogicFlower',
+      applicationCategory: 'BusinessApplication',
+      operatingSystem: 'Web',
+      description,
+      offers: { '@type': 'Offer', category: 'SaaS', price: '0', priceCurrency: 'USD' }
+    })
+  }
+
+  const jsonLdScript = `<script type="application/ld+json">${JSON.stringify(jsonLd).replace(/</g, '\\u003c')}</script>`
+
+  html = html.replace('</head>', `  ${head}\n    ${jsonLdScript}\n  </head>`)
 
   // Inject a basic HTML shell into the root div so non-JS crawlers see the content
   const fallbackHtml = `
     <header>
       <nav>
         <a href="/">LogicFlower</a>
-        <a href="/features/missed-call-text-back">Missed Call Text Back</a>
-        <a href="/features/follow-up-automation">Follow-Up Automation</a>
-        <a href="/solutions/crm-for-trades">CRM for Trades</a>
-        <a href="/compare/logicflower-vs-per-action-pricing">Pricing Comparison</a>
+        <a href="/features/missed-call-text-back/">Missed Call Text Back</a>
+        <a href="/features/follow-up-automation/">Follow-Up Automation</a>
+        <a href="/solutions/crm-for-trades/">CRM for Trades</a>
+        <a href="/compare/logicflower-vs-per-action-pricing/">Pricing Comparison</a>
         <a href="/blog/">Blog</a>
-        <a href="/help/">Help Centre</a>
+        <a href="/help/">Help Center</a>
       </nav>
     </header>
     <main>

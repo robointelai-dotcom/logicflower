@@ -700,30 +700,28 @@ publicContentRouter.get('/sitemap.xml', publicLimiter, asyncHandler(async (_req,
   interface Entry {
     loc: string
     lastmod?: Date | null
-    priority: number
-    changefreq: string
     image?: { loc: string; title: string; caption?: string }
   }
 
+  const now = new Date()
+
   const entries: Entry[] = [
     ...STATIC_PUBLIC_ROUTES.map((route) => ({
-      loc: absoluteUrl(site, route.path), priority: route.priority, changefreq: route.changefreq,
+      loc: absoluteUrl(site, route.path), lastmod: now,
     })),
     // One page per search intent. A homepage cannot rank for four queries at
     // once, so these are where the specific ones land.
     ...MARKETING_ROUTES.map((route) => ({
-      loc: absoluteUrl(site, route.path), priority: route.priority, changefreq: route.changefreq,
+      loc: absoluteUrl(site, route.path), lastmod: now,
     })),
     // Help articles are worth indexing: "why is activate greyed out" is a real
     // search, and one of these pages is the answer.
     ...helpRoutes().map((route) => ({
-      loc: absoluteUrl(site, route.path), priority: route.priority, changefreq: route.changefreq,
+      loc: absoluteUrl(site, route.path), lastmod: now,
     })),
     ...posts.map((post) => ({
       loc: absoluteUrl(site, `/blog/${post.slug}`),
       lastmod: post.updatedAt,
-      priority: 0.6,
-      changefreq: 'monthly',
       // The image namespace, so a featured image is indexed with its article
       // rather than being invisible.
       ...(post.featuredImageUrl ? {
@@ -739,14 +737,13 @@ publicContentRouter.get('/sitemap.xml', publicLimiter, asyncHandler(async (_req,
   res.send(`<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
 ${entries.map((entry) => `  <url>
-    <loc>${escapeHtml(entry.loc)}</loc>${entry.lastmod ? `\n    <lastmod>${new Date(entry.lastmod).toISOString().slice(0, 10)}</lastmod>` : ''}
-    <changefreq>${entry.changefreq}</changefreq>
-    <priority>${entry.priority.toFixed(1)}</priority>${entry.image ? `\n    <image:image>
+    <loc>${escapeHtml(entry.loc)}</loc>${entry.lastmod ? `\n    <lastmod>${new Date(entry.lastmod).toISOString().slice(0, 10)}</lastmod>` : ''}${entry.image ? `\n    <image:image>
       <image:loc>${escapeHtml(entry.image.loc)}</image:loc>
       <image:title>${escapeHtml(entry.image.title)}</image:title>${entry.image.caption ? `\n      <image:caption>${escapeHtml(entry.image.caption)}</image:caption>` : ''}
     </image:image>` : ''}
   </url>`).join('\n')}
-</urlset>`)
+</urlset>
+`)
 }))
 
 export default router

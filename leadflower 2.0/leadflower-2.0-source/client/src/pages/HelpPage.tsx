@@ -5,7 +5,7 @@ import { AppLogo } from '../components/ui'
 import { articleBySlug, HELP_ARTICLES, HELP_CATEGORIES, searchArticles, type HelpArticle } from '../help/content'
 
 /**
- * The help centre.
+ * The help center.
  *
  * Public: somebody evaluating the product, or locked out of their account,
  * should be able to read it. Nothing here is workspace-specific.
@@ -15,7 +15,7 @@ import { articleBySlug, HELP_ARTICLES, HELP_CATEGORIES, searchArticles, type Hel
  */
 
 function Chrome({ children }: { children: React.ReactNode }) {
-  return <div className="marketing help-centre">
+  return <div className="marketing help-center">
     <header className="marketing-nav">
       <Link to="/" className="marketing-brand"><AppLogo /></Link>
       <nav aria-label="Main"><Link to="/help">Help</Link><Link to="/blog">Blog</Link><Link to="/status">Status</Link></nav>
@@ -37,7 +37,7 @@ export function HelpCenterPage() {
 
   return <Chrome>
     <section className="section help-head">
-      <p className="eyebrow">Help centre</p>
+      <p className="eyebrow">Help center</p>
       <h1>How everything works</h1>
       <p className="section-sub">Written for a business owner, not an engineer. If a word needs explaining, it is explained where it appears.</p>
       <label className="search-input help-search">
@@ -110,7 +110,7 @@ export default function HelpArticlePage() {
     <section className="section article">
       <h1>Not found</h1>
       <p className="muted">That article does not exist.</p>
-      <Link to="/help">Back to the help centre</Link>
+      <Link to="/help">Back to the help center</Link>
     </section>
   </Chrome>
 
@@ -118,7 +118,7 @@ export default function HelpArticlePage() {
 
   return <Chrome>
     <article className="section article">
-      <p className="back-link"><Link to="/help"><ArrowLeft size={13} /> Help centre</Link></p>
+      <p className="back-link"><Link to="/help"><ArrowLeft size={13} /> Help center</Link></p>
       <header className="article-head">
         <span className="eyebrow">{category?.name}</span>
         <h1>{article.title}</h1>

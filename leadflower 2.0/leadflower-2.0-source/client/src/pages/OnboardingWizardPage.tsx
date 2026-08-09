@@ -13,7 +13,7 @@ import { useAction, useApi } from '../hooks/useApi'
  * create button is correctly but confusingly disabled.
  *
  * One choice here seeds a pipeline, custom fields, follow-up sequences and an
- * enquiry form. Everything it creates is ordinary and editable — the pack is a
+ * inquiry form. Everything it creates is ordinary and editable — the pack is a
  * starting point, not a mould.
  */
 
@@ -67,7 +67,7 @@ export default function OnboardingWizardPage() {
           {applied.pipeline.created && <li><Check size={16} />Pipeline created with its stages</li>}
           {applied.customFields.created.length > 0 && <li><Check size={16} />{applied.customFields.created.length} custom fields added</li>}
           {applied.sequences.created.length > 0 && <li><Check size={16} />{applied.sequences.created.length} follow-up sequences written, saved as drafts</li>}
-          {applied.forms.created.length > 0 && <li><Check size={16} />{applied.forms.created.length} enquiry form created as a draft</li>}
+          {applied.forms.created.length > 0 && <li><Check size={16} />{applied.forms.created.length} inquiry form created as a draft</li>}
         </ul>
         {/*
           Stated rather than assumed: nothing starts messaging anyone until a
@@ -94,7 +94,7 @@ export default function OnboardingWizardPage() {
     <PageHeader
       eyebrow="Setup"
       title="What kind of work do you do?"
-      description="Pick the closest match and we'll set up your pipeline, fields, follow-up and enquiry form. Change anything afterwards."
+      description="Pick the closest match and we'll set up your pipeline, fields, follow-up and inquiry form. Change anything afterwards."
     />
     {action.error && <Alert onDismiss={action.clear}>{action.error}</Alert>}
 

@@ -95,7 +95,7 @@ export const MARKETING_PAGES: MarketingPage[] = [
     metaDescription: 'Multi-step follow-up by text and email that stops the moment somebody answers. No charge per message.',
     intent: 'Somebody looking for lead follow-up automation without per-action pricing.',
     standfirst:
-      'Set the chase up once. It runs on every enquiry after that, and stops the moment the person replies.',
+      'Set the chase up once. It runs on every inquiry after that, and stops the moment the person replies.',
     sections: [
       {
         heading: 'How a sequence works',
@@ -148,18 +148,18 @@ export const MARKETING_PAGES: MarketingPage[] = [
     metaDescription: 'Quote-to-job pipeline, follow-up that stops on reply, and a booking link. Set up for your trade in a minute.',
     intent: 'A tradesperson looking for something simpler than an enterprise CRM.',
     standfirst:
-      'Enquiry, survey, quote, scheduled, done. Your work as a board, with the chasing handled for you.',
+      'Inquiry, survey, quote, scheduled, done. Your work as a board, with the chasing handled for you.',
     sections: [
       {
         heading: 'Set up for your trade, not for a sales team',
         body:
           'Pick trades and home services when you sign up and your pipeline stages, custom fields, follow-up and '
-          + 'enquiry form are written for you. Change any of it — it is a starting point, not a mould.',
+          + 'inquiry form are written for you. Change any of it — it is a starting point, not a mould.',
         points: [
           'Stages that match how a job actually moves',
           'Site address, access notes and job type as real fields',
           'A speed-to-lead sequence already written',
-          'An enquiry form to embed on your site',
+          'An inquiry form to embed on your site',
         ],
       },
       {
@@ -172,7 +172,7 @@ export const MARKETING_PAGES: MarketingPage[] = [
     faqs: [
       {
         question: 'Do I have to set all this up myself?',
-        answer: 'No. Choose your trade during setup and the pipeline, fields, follow-up and enquiry form are created for you as drafts. Read them, put them in your own words, and switch them on.',
+        answer: 'No. Choose your trade during setup and the pipeline, fields, follow-up and inquiry form are created for you as drafts. Read them, put them in your own words, and switch them on.',
       },
       {
         question: 'Will it work on a phone?',
@@ -214,7 +214,7 @@ export const MARKETING_PAGES: MarketingPage[] = [
       {
         heading: 'Work it out on your own numbers',
         body:
-          'The calculator on our homepage takes your enquiry volume, your number of steps, and the per-action rate '
+          'The calculator on our homepage takes your inquiry volume, your number of steps, and the per-action rate '
           + 'your current platform actually charges. The arithmetic is shown rather than asserted — put your own '
           + 'figures in rather than taking ours.',
       },

@@ -243,7 +243,7 @@ export default function SequenceEditorPage() {
             </Field>}
 
             {step.channel === 'email' && <Field label="Subject" required>
-              <input value={step.subjectTemplate ?? ''} onChange={(event) => update(index, { subjectTemplate: event.target.value })} placeholder="About your enquiry" />
+              <input value={step.subjectTemplate ?? ''} onChange={(event) => update(index, { subjectTemplate: event.target.value })} placeholder="About your inquiry" />
             </Field>}
 
             <Field label="Message" required hint={step.channel === 'sms' ? 'Keep it short — long texts are split and billed per part.' : undefined}>

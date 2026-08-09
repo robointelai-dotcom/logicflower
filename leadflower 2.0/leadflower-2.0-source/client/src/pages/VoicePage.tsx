@@ -120,7 +120,7 @@ export default function VoicePage() {
       footer={<><Button onClick={() => setOpen(false)}>Cancel</Button><Button variant="primary" type="submit" form="agent-form" busy={action.loading}>Create</Button></>}
     >
       <form id="agent-form" className="form-stack" onSubmit={createAgent}>
-        <Field label="Agent name" required><input value={name} onChange={(event) => setName(event.target.value)} required autoFocus placeholder="Missed enquiry callback" /></Field>
+        <Field label="Agent name" required><input value={name} onChange={(event) => setName(event.target.value)} required autoFocus placeholder="Missed inquiry callback" /></Field>
       </form>
     </Modal>
   </>

@@ -1,5 +1,5 @@
 /**
- * Help centre content.
+ * Help center content.
  *
  * Shipped with the application rather than held in a database, deliberately.
  * Help that describes a version must travel with that version — a database
@@ -52,7 +52,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
     category: 'getting-started',
     summary: 'The short version: it answers enquiries fast and stops when someone replies.',
     whatItIs:
-      'A system that answers every enquiry quickly, keeps following up until the person replies, and stops the '
+      'A system that answers every inquiry quickly, keeps following up until the person replies, and stops the '
       + 'moment they do. Everything else — the contact record, the pipeline, the booking link, the reviews — '
       + 'exists to support that.',
     whyUseIt:
@@ -78,15 +78,15 @@ export const HELP_ARTICLES: HelpArticle[] = [
     title: 'Setting up your workspace',
     category: 'getting-started',
     route: '/setup',
-    summary: 'One choice creates your pipeline, fields, follow-up and enquiry form.',
+    summary: 'One choice creates your pipeline, fields, follow-up and inquiry form.',
     whatItIs:
       'A short wizard. You pick the trade closest to your business and it writes a pipeline with sensible '
-      + 'stages, the extra fields your trade needs, a couple of follow-up sequences and an enquiry form.',
+      + 'stages, the extra fields your trade needs, a couple of follow-up sequences and an inquiry form.',
     whyUseIt:
       'A brand-new workspace is empty, and several buttons are correctly disabled until it has something to work '
       + 'with. Skipping this is the single most common reason the application looks broken when it is not.',
     example:
-      'A plumbing business picks Trades and gets stages of New enquiry, Survey booked, Quoted, Scheduled, '
+      'A plumbing business picks Trades and gets stages of New inquiry, Survey booked, Quoted, Scheduled, '
       + 'Completed — plus a speed-to-lead sequence already written.',
     steps: [
       'Open Setup from the Today screen or go to /setup.',
@@ -293,7 +293,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
     whyUseIt:
       'Because most work is won by following up, and nobody follows up reliably by hand while also doing the job.',
     example:
-      'New enquiry arrives. Immediate text acknowledging it. Next morning, an email with a price guide. Three '
+      'New inquiry arrives. Immediate text acknowledging it. Next morning, an email with a price guide. Three '
       + 'days later, a short "still interested?" text. Any reply stops all of it.',
     steps: [
       'Open Sequences and press New sequence.',
@@ -379,7 +379,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
       + 'one without.',
     example:
       'Tag added "solar-interest" → has tag "existing-customer"? → if yes, enrol in the upgrade sequence; if no, '
-      + 'move the deal to New enquiry and raise a task.',
+      + 'move the deal to New inquiry and raise a task.',
     steps: [
       'Open Workflows and create one.',
       'Drag a trigger onto the canvas.',
@@ -631,7 +631,7 @@ export function articleForRoute(route: string): HelpArticle | undefined {
  * Search across every field a person might remember a phrase from.
  *
  * Deliberately searches problems and terminology as well as titles: somebody
- * arriving at the help centre is usually quoting the thing that went wrong, not
+ * arriving at the help center is usually quoting the thing that went wrong, not
  * the name of the feature.
  */
 export function searchArticles(query: string): HelpArticle[] {

@@ -197,7 +197,7 @@ export default function ConsolePage() {
           */}
           {(data?.contacts ?? 0) === 0 && (health?.scheduledSteps.pending ?? 0) === 0
             ? <>
-              <span className="muted">Your workspace is empty. Set it up and your pipeline, follow-up and enquiry form are ready in a minute.</span>
+              <span className="muted">Your workspace is empty. Set it up and your pipeline, follow-up and inquiry form are ready in a minute.</span>
               <p className="all-clear-action"><Link to="/setup">Set up my workspace</Link></p>
             </>
             : <span className="muted">Replies, overdue tasks and anything the system could not finish will appear here.</span>}

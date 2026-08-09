@@ -174,7 +174,7 @@ export default function Shell() {
       {(['owner', 'admin'].includes(session?.user.platformRole ?? 'user') && session?.user.mfaEnabled) && (
         <div className="sidebar-admin"><NavLink to="/admin"><ShieldCheck size={18} /><span>Admin portal</span></NavLink></div>
       )}
-      {canViewOperations && <div className="sidebar-help"><strong>Setup & support</strong><span>Complete the checklist or open the help centre.</span><NavLink to="/onboarding">Continue setup</NavLink><NavLink to="/help">Help centre</NavLink></div>}
+      {canViewOperations && <div className="sidebar-help"><strong>Setup & support</strong><span>Complete the checklist or open the help center.</span><NavLink to="/onboarding">Continue setup</NavLink><NavLink to="/help">Help center</NavLink></div>}
     </>
   )
 

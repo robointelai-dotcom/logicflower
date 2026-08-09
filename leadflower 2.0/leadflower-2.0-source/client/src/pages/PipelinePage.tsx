@@ -121,7 +121,7 @@ export default function PipelinePage() {
     const result = await action.run(() => send<{ id: string }>('post', '/crm/pipelines', {
       name: pipelineName,
       stages: [
-        { name: 'New enquiry' }, { name: 'Quoted' }, { name: 'Scheduled' },
+        { name: 'New inquiry' }, { name: 'Quoted' }, { name: 'Scheduled' },
         { name: 'Won', outcome: 'won' }, { name: 'Lost', outcome: 'lost' },
       ],
     }), 'Pipeline created.')
