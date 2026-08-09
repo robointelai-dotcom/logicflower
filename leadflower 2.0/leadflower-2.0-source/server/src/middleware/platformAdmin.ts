@@ -12,13 +12,17 @@ export function requirePlatformRole(...roles: Array<'support' | 'admin' | 'owner
     next()
   }
 }
+const REQUIRE_CORPORATE_MFA = String(process.env.CORPORATE_MFA_REQUIRED ?? 'true').toLowerCase() !== 'false'
+
+if (!REQUIRE_CORPORATE_MFA) {
+  console.warn('[security] CORPORATE_MFA_REQUIRED=false — platform administration does not require a second factor. A stolen platform password is sufficient to read every tenant and publish to the operator\\'s own domain.')
+}
 
 export function requireAdminMfa(req: Request, res: Response, next: NextFunction): void {
-  // MFA requirement temporarily disabled
-  // if (!req.auth?.mfaEnabled) {
-  //   sendProblem(req, res, { status: 403, title: 'MFA required', detail: 'MFA is required for platform administration', type: problemType('mfa-required') })
-  //   return
-  // }
+  if (REQUIRE_CORPORATE_MFA && !req.auth?.mfaEnabled) {
+    sendProblem(req, res, { status: 403, title: 'MFA required', detail: 'MFA is required for platform administration', type: problemType('mfa-required') })
+    return
+  }
   next()
 }
 
@@ -49,18 +53,7 @@ export async function requireRecentAuthentication(req: Request, res: Response, n
  * corporate endpoints on one mount, so the requirement belongs on the handlers
  * that need it rather than on the router.
  */
-/**
- * Whether platform administration demands a second factor.
- *
- * Read once at start-up so the value cannot drift between requests.
- */
-const REQUIRE_CORPORATE_MFA = String(process.env.CORPORATE_MFA_REQUIRED ?? 'true').toLowerCase() !== 'false'
 
-if (!REQUIRE_CORPORATE_MFA) {
-  // Loud on purpose. Somebody should have to explain this line in a log review.
-  // eslint-disable-next-line no-console
-  console.warn('[security] CORPORATE_MFA_REQUIRED=false — platform administration does not require a second factor. A stolen platform password is sufficient to read every tenant and publish to the operator\'s own domain.')
-}
 
 export function assertCorporate(req: Request, options: { mfa?: boolean } = {}): void {
   const role = String(req.auth?.platformRole || 'user')
