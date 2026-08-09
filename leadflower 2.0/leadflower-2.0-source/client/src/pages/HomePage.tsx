@@ -165,8 +165,8 @@ export default function HomePage() {
   const primaryHref = session ? '/dashboard' : '/signup'
   const primaryLabel = session ? 'Open your workspace' : 'Start free'
 
-  const title = 'LogicFlower | CRM & Follow-Up Automation for Small Businesses'
-  const description = 'LogicFlower chases every lead for you by text and email and stops when they reply. Add a simple CRM, a booking link and review collection, with no charge per action.'
+  const title = 'Lead Follow-Up CRM for Small Businesses | LogicFlower'
+  const description = 'Reply to every lead in seconds with automated SMS and email follow-up, a simple CRM, appointment booking and review collection—without per-action fees.'
   const keywords = 'crm for small business, automated follow up, appointment booking software, missed call text back, logicflower'
 
   React.useEffect(() => {
@@ -249,11 +249,9 @@ export default function HomePage() {
     {/* ---------------------------------------------------------- hero */}
     <section className="hero">
       <div className="hero-copy">
-        <p className="hero-eyebrow">For small businesses that lose work by replying late</p>
-        <h1>Every enquiry answered<br /><em>in seconds</em>, not tomorrow.</h1>
-        <p className="hero-sub">
-          LogicFlower chases every lead for you — by text and email — and stops the moment they reply.
-          Add a simple CRM, a booking link and review collection, with <strong>no charge per action</strong>.
+        <h1>Automated Lead Follow-Up That Turns Every Inquiry Into a Booked Job</h1>
+        <p className="subtitle">
+          Reply to every lead in seconds with automated SMS and email follow-up, a simple CRM, appointment booking and review collection—without per-action fees.
         </p>
         <div className="hero-actions">
           <Link to={primaryHref} className="btn-primary-lg">{primaryLabel}<ArrowRight size={17} /></Link>

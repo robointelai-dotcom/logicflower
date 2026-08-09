@@ -80,8 +80,8 @@ const LANDING_PAGES = [
 ]
 
 const ROUTES = [
-  ['/', 'LogicFlower — every enquiry answered in seconds',
-    'Follow-up that chases every lead and stops the moment they reply. Plus a simple CRM, booking link and reviews, with no charge per action.'],
+  ['/', 'Lead Follow-Up CRM for Small Businesses | LogicFlower',
+    'Reply to every lead in seconds with automated SMS and email follow-up, a simple CRM, appointment booking and review collection—without per-action fees.'],
   ['/blog', 'Blog — LogicFlower',
     'Practical writing about follow-up, booking and reputation for small businesses.'],
   ['/help', 'Help centre — LogicFlower',
@@ -98,8 +98,10 @@ const ROUTES = [
  */
 function buildHtml(template, route) {
   const [routePath, title, description] = route
-  const canonicalBase = process.env.CANONICAL_ORIGIN?.replace(/\/$/, '') ?? ''
-  const canonical = canonicalBase ? `${canonicalBase}${routePath}` : routePath
+  const canonicalBase = process.env.CANONICAL_ORIGIN?.replace(/\/$/, '') ?? 'https://logicflower.com'
+  let canonicalPath = routePath.endsWith('/') ? routePath : `${routePath}/`
+  if (canonicalPath === '//') canonicalPath = '/' // prevent double slash for root
+  const canonical = `${canonicalBase}${canonicalPath}`
 
   /*
    * The share card image.
@@ -127,7 +129,7 @@ function buildHtml(template, route) {
     socialImage ? `<meta property="og:image" content="${escapeHtml(socialImage)}">` : '',
     socialImage ? `<meta property="og:image:alt" content="${escapeHtml(title)}">` : '',
     `<meta property="og:site_name" content="LogicFlower">`,
-    `<meta property="og:locale" content="en_GB">`,
+    `<meta property="og:locale" content="en_US">`,
     `<meta name="twitter:card" content="${socialImage ? 'summary_large_image' : 'summary'}">`,
     `<meta name="twitter:title" content="${escapeHtml(title)}">`,
     `<meta name="twitter:description" content="${escapeHtml(description)}">`,
@@ -140,7 +142,28 @@ function buildHtml(template, route) {
   // a crawler taking the first match reads the generic one.
   html = html.replace(/<title>[\s\S]*?<\/title>/i, '')
   html = html.replace(/<meta\s+name="description"[^>]*>/i, '')
+  html = html.replace(/<meta\s+(?:property|name)="(?:og:|twitter:)[^>]*>/ig, '')
   html = html.replace('</head>', `  ${head}\n  </head>`)
+
+  // Inject a basic HTML shell into the root div so non-JS crawlers see the content
+  const fallbackHtml = `
+    <header>
+      <nav>
+        <a href="/">LogicFlower</a>
+        <a href="/features/missed-call-text-back">Missed Call Text Back</a>
+        <a href="/features/follow-up-automation">Follow-Up Automation</a>
+        <a href="/solutions/crm-for-trades">CRM for Trades</a>
+        <a href="/compare/logicflower-vs-per-action-pricing">Pricing Comparison</a>
+        <a href="/blog/">Blog</a>
+        <a href="/help/">Help Centre</a>
+      </nav>
+    </header>
+    <main>
+      <h1>${escapeHtml(title.split(' | ')[0].split(' — ')[0])}</h1>
+      <p>${escapeHtml(description)}</p>
+    </main>
+  `
+  html = html.replace('<div id="root"></div>', `<div id="root">${fallbackHtml}</div>`)
 
   return html
 }

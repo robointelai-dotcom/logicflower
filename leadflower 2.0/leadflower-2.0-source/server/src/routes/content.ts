@@ -61,10 +61,12 @@ async function settings() {
   return await SiteSetting.findOneAndUpdate({ key: 'site' }, { $setOnInsert: { key: 'site' } }, { upsert: true, new: true }).lean() as any
 }
 
-/** Absolute URL from the one configured origin, so canonicals never disagree. */
 function absoluteUrl(site: any, path: string): string {
-  const origin = String(site?.canonicalDomain || '').replace(/\/$/, '')
-  return origin ? `${origin}${path}` : path
+  const origin = String(site?.canonicalDomain || 'https://logicflower.com').replace(/\/$/, '')
+  // Add trailing slash for directories (not files like .xml or .txt or .jpg)
+  const isFile = path.match(/\.[a-zA-Z0-9]+$/)
+  const slashedPath = (!isFile && !path.endsWith('/')) ? `${path}/` : path
+  return `${origin}${slashedPath}`
 }
 
 /* ------------------------------------------------------------- blog (admin) */
@@ -669,14 +671,21 @@ publicContentRouter.get('/article-shell/:slug', publicLimiter, asyncHandler(asyn
 }))
 
 publicContentRouter.get('/robots.txt', publicLimiter, asyncHandler(async (_req, res) => {
-  const site = await settings()
+  const site = await getSiteSettings()
   res.type('text/plain')
-  // A site-wide noindex is honoured here as well as in the page metadata, so a
-  // staging deployment cannot leak into search through one route while blocked
-  // on the other.
+  
   if (site.robotsNoindexAll) return res.send('User-agent: *\nDisallow: /\n')
+  
   const sitemap = absoluteUrl(site, '/sitemap.xml')
-  res.send(`User-agent: *\nAllow: /\nDisallow: /api/\n\nSitemap: ${sitemap}\n`)
+
+  res.send([
+    'User-agent: *',
+    'Allow: /api/v1/public/content/',
+    'Disallow: /api/',
+    'Disallow: /*?*',
+    '',
+    `Sitemap: ${sitemap}`,
+  ].join('\n') + '\n')
 }))
 
 publicContentRouter.get('/sitemap.xml', publicLimiter, asyncHandler(async (_req, res) => {
