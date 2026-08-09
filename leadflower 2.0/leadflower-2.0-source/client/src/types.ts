@@ -12,7 +12,7 @@ export interface User {
   platformRole?: 'user' | 'support' | 'admin' | 'owner'
 }
 
-export type OrganizationRole = 'owner' | 'admin' | 'operator' | 'viewer' | 'billing' | 'customer'
+export type OrganizationRole = 'owner' | 'admin' | 'operator' | 'viewer' | 'billing' | 'customer' | 'agency_owner'
 
 export interface Organization {
   id: Identifier
