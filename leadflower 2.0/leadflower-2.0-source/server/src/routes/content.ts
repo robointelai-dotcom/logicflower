@@ -34,6 +34,14 @@ import { assertCorporate } from '../middleware/platformAdmin'
 const router = Router()
 export const publicContentRouter = Router()
 
+publicContentRouter.use((req, res, next) => {
+  // Do not block indexing of the sitemap, robots file, or the server-rendered article HTML shell
+  if (!['/robots.txt', '/sitemap.xml', '/rss.xml'].includes(req.path) && !req.path.startsWith('/article-shell/')) {
+    res.setHeader('X-Robots-Tag', 'noindex')
+  }
+  next()
+})
+
 const publicLimiter = rateLimit({ windowMs: 60_000, limit: 240, standardHeaders: 'draft-7', legacyHeaders: false })
 
 function objectId(value: unknown, label: string): string {
@@ -682,7 +690,6 @@ publicContentRouter.get('/robots.txt', publicLimiter, asyncHandler(async (_req, 
     'User-agent: *',
     'Allow: /api/v1/public/content/',
     'Disallow: /api/',
-    'Disallow: /*?*',
     '',
     `Sitemap: ${sitemap}`,
   ].join('\n') + '\n')

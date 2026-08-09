@@ -113,7 +113,7 @@ function buildHtml(template, route) {
    *
    * SOCIAL_IMAGE_PATH overrides the default for a purpose-built card.
    */
-  const socialPath = process.env.SOCIAL_IMAGE_PATH || '/ecosystem.jpg'
+  const socialPath = process.env.SOCIAL_IMAGE_PATH || '/social-card.png'
   const socialImage = canonicalBase ? `${canonicalBase}${socialPath}` : ''
 
   const head = [
@@ -152,7 +152,7 @@ function buildHtml(template, route) {
         '@type': 'Organization',
         name: 'LogicFlower',
         url: canonicalBase,
-        logo: `${canonicalBase}/favicon.svg`
+        logo: `${canonicalBase}/social-card.png`
       },
       {
         '@type': 'WebSite',
@@ -169,13 +169,47 @@ function buildHtml(template, route) {
       applicationCategory: 'BusinessApplication',
       operatingSystem: 'Web',
       description,
-      offers: { '@type': 'Offer', category: 'SaaS', price: '0', priceCurrency: 'USD' }
+      offers: [
+        { '@type': 'Offer', name: 'Solo', category: 'SaaS', price: '0', priceCurrency: 'USD' },
+        { '@type': 'Offer', name: 'Business', category: 'SaaS', price: '49', priceCurrency: 'USD' }
+      ]
     })
   }
 
   const jsonLdScript = `<script type="application/ld+json">${JSON.stringify(jsonLd).replace(/</g, '\\u003c')}</script>`
 
   html = html.replace('</head>', `  ${head}\n    ${jsonLdScript}\n  </head>`)
+
+  let extraContent = ''
+  if (routePath === '/') {
+    extraContent = `
+      <section>
+        <h2>From inquiry to booked job</h2>
+        <p>LogicFlower connects to your website form and answers inquiries instantly.</p>
+        <h3>Core Features</h3>
+        <ul>
+          <li>Missed Call Text Back</li>
+          <li>Follow-Up Automation</li>
+          <li>CRM for Trades</li>
+          <li>Pipeline Management</li>
+        </ul>
+      </section>
+      <section>
+        <h2>Pricing</h2>
+        <p>Start for free, upgrade when you need more power.</p>
+        <ul>
+          <li>Solo: $0 - Perfect for owner-operators.</li>
+          <li>Business: $49/mo - Unlimited users, full automation.</li>
+        </ul>
+      </section>
+      <section>
+        <h2>Frequently Asked Questions</h2>
+        <article>
+          <h3>Do I have to build my own pipeline?</h3>
+          <p>No. Pick your trade when you sign up and you get a pipeline, follow-up sequences and an inquiry form already written for it. Change anything you like afterwards.</p>
+        </article>
+      </section>`
+  }
 
   // Inject a basic HTML shell into the root div so non-JS crawlers see the content
   const fallbackHtml = `
@@ -193,6 +227,7 @@ function buildHtml(template, route) {
     <main>
       <h1>${escapeHtml(title.split(' | ')[0].split(' — ')[0])}</h1>
       <p>${escapeHtml(description)}</p>
+      ${extraContent}
     </main>
   `
   html = html.replace('<div id="root"></div>', `<div id="root">${fallbackHtml}</div>`)
@@ -229,7 +264,7 @@ function main() {
 
   console.log(`prerender: wrote ${written} pages with correct metadata`)
   if (!process.env.SOCIAL_IMAGE_PATH && process.env.CANONICAL_ORIGIN) {
-    console.warn(`prerender: using ${'/ecosystem.jpg'} as the share card. Set SOCIAL_IMAGE_PATH to a purpose-built 1200x630 image for better results.`)
+    console.warn(`prerender: using ${'/social-card.png'} as the share card. Set SOCIAL_IMAGE_PATH to a purpose-built 1200x630 image for better results.`)
   }
   if (!process.env.CANONICAL_ORIGIN) {
     // Canonical URLs must be absolute to be useful. A relative one is ignored

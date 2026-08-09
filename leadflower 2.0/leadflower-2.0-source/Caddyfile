@@ -1,5 +1,5 @@
 www.logicflower.com {
-    redir https://logicflower.com{uri} 301
+    redir https://logicflower.com{uri} permanent
 }
 
 logicflower.com {
