@@ -1,3 +1,7 @@
 logicflower.com, www.logicflower.com {
     reverse_proxy web:8080
 }
+
+app.logicflower.com {
+    reverse_proxy 139.99.134.4:8001
+}
