@@ -133,10 +133,63 @@ function SavingsCalculator() {
 
 /* -------------------------------------------------------------------- page */
 
+const homeFaqs = [
+  {
+    q: 'How is this cheaper than platforms that charge per action?',
+    a: 'They bill for each step a workflow takes. We do not charge per action at all — you connect your own email and SMS accounts and pay those providers directly for the messages. The calculator above shows the workflow fees you would stop paying; it does not include message costs, which you pay either way.',
+  },
+  {
+    q: 'What happens when someone replies mid-sequence?',
+    a: 'Everything stops for that person, on every channel, immediately. Being chased three more times after you have already answered is the fastest way to lose a customer, so it is handled automatically rather than left to you to remember.',
+  },
+  {
+    q: 'Do I need to be technical?',
+    a: 'No. Pick your trade when you sign up and you get a pipeline, follow-up sequences and an enquiry form already written for it. Change anything you like afterwards.',
+  },
+  {
+    q: 'Can I really post to social media?',
+    a: 'Not yet, and we will say so plainly rather than surprise you. The composer, calendar and scheduling are built, but publishing needs each platform to approve our application — Meta, LinkedIn, TikTok and the rest. Those take weeks to months and some can be refused. We will announce it when it is genuinely working.',
+  },
+  {
+    q: 'Is the AI calling available?',
+    a: 'Not yet. The parts that keep automated calling lawful are built and tested — calling hours in the customer’s own timezone, do-not-call checks that block rather than assume, spoken disclosure, mid-call opt-out. The dialling itself needs a telephony provider connected, and we will not turn it on before that is done properly.',
+  },
+  {
+    q: 'What happens to my data?',
+    a: 'It stays yours. You can export everything, and delete it. Nobody from our team can open your workspace unless you approve it, that approval expires on its own, and you can see exactly who has access and withdraw it at any time.',
+  },
+]
+
 export default function HomePage() {
   const { session } = useAuth()
   const primaryHref = session ? '/dashboard' : '/signup'
   const primaryLabel = session ? 'Open your workspace' : 'Start free'
+
+  const title = 'LogicFlower | CRM & Follow-Up Automation for Small Businesses'
+  const description = 'LogicFlower chases every lead for you by text and email and stops when they reply. Add a simple CRM, a booking link and review collection, with no charge per action.'
+  const keywords = 'crm for small business, automated follow up, appointment booking software, missed call text back, logicflower'
+
+  React.useEffect(() => {
+    document.title = title
+
+    const upsert = (selector: string, create: () => HTMLElement, apply: (el: HTMLElement) => void) => {
+      let element = document.head.querySelector(selector) as HTMLElement | null
+      if (!element) { element = create(); document.head.appendChild(element) }
+      apply(element)
+    }
+
+    upsert('meta[name="description"]',
+      () => Object.assign(document.createElement('meta'), { name: 'description' }),
+      (el) => el.setAttribute('content', description))
+
+    upsert('meta[name="keywords"]',
+      () => Object.assign(document.createElement('meta'), { name: 'keywords' }),
+      (el) => el.setAttribute('content', keywords))
+      
+    upsert('link[rel="canonical"]',
+      () => Object.assign(document.createElement('link'), { rel: 'canonical' }),
+      (el) => el.setAttribute('href', typeof window !== 'undefined' ? window.location.origin + '/' : '/'))
+  }, [])
 
   return <div className="marketing">
     {/*
@@ -147,12 +200,29 @@ export default function HomePage() {
     <script type="application/ld+json" dangerouslySetInnerHTML={{
       __html: JSON.stringify({
         '@context': 'https://schema.org',
-        '@type': 'SoftwareApplication',
-        name: 'LogicFlower',
-        applicationCategory: 'BusinessApplication',
-        operatingSystem: 'Web',
-        description: 'Follow-up automation, micro-CRM, booking and reputation for small businesses, without per-action workflow fees.',
-        offers: { '@type': 'Offer', category: 'SaaS' },
+        '@graph': [
+          {
+            '@type': 'SoftwareApplication',
+            name: 'LogicFlower',
+            applicationCategory: 'BusinessApplication',
+            operatingSystem: 'Web',
+            description,
+            offers: { '@type': 'Offer', category: 'SaaS' },
+          },
+          {
+            '@type': 'WebSite',
+            name: 'LogicFlower',
+            url: typeof window !== 'undefined' ? window.location.origin : 'https://logicflower.com',
+          },
+          {
+            '@type': 'FAQPage',
+            mainEntity: homeFaqs.map((faq) => ({
+              '@type': 'Question',
+              name: faq.q,
+              acceptedAnswer: { '@type': 'Answer', text: faq.a },
+            })),
+          }
+        ]
       }).replace(/</g, '\\u003c'),
     }} />
 
@@ -425,32 +495,7 @@ export default function HomePage() {
         <h2>The things people ask first</h2>
       </div>
       <div className="faq">
-        {[
-          {
-            q: 'How is this cheaper than platforms that charge per action?',
-            a: 'They bill for each step a workflow takes. We do not charge per action at all — you connect your own email and SMS accounts and pay those providers directly for the messages. The calculator above shows the workflow fees you would stop paying; it does not include message costs, which you pay either way.',
-          },
-          {
-            q: 'What happens when someone replies mid-sequence?',
-            a: 'Everything stops for that person, on every channel, immediately. Being chased three more times after you have already answered is the fastest way to lose a customer, so it is handled automatically rather than left to you to remember.',
-          },
-          {
-            q: 'Do I need to be technical?',
-            a: 'No. Pick your trade when you sign up and you get a pipeline, follow-up sequences and an enquiry form already written for it. Change anything you like afterwards.',
-          },
-          {
-            q: 'Can I really post to social media?',
-            a: 'Not yet, and we will say so plainly rather than surprise you. The composer, calendar and scheduling are built, but publishing needs each platform to approve our application — Meta, LinkedIn, TikTok and the rest. Those take weeks to months and some can be refused. We will announce it when it is genuinely working.',
-          },
-          {
-            q: 'Is the AI calling available?',
-            a: 'Not yet. The parts that keep automated calling lawful are built and tested — calling hours in the customer\u2019s own timezone, do-not-call checks that block rather than assume, spoken disclosure, mid-call opt-out. The dialling itself needs a telephony provider connected, and we will not turn it on before that is done properly.',
-          },
-          {
-            q: 'What happens to my data?',
-            a: 'It stays yours. You can export everything, and delete it. Nobody from our team can open your workspace unless you approve it, that approval expires on its own, and you can see exactly who has access and withdraw it at any time.',
-          },
-        ].map((item) => <details key={item.q} className="faq-item">
+        {homeFaqs.map((item) => <details key={item.q} className="faq-item">
           <summary>{item.q}</summary>
           <p>{item.a}</p>
         </details>)}
