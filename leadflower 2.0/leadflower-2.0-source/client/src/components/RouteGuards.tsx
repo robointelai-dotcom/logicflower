@@ -15,7 +15,11 @@ export function ProtectedRoute() {
 export function PublicOnlyRoute() {
   const { session, loading } = useAuth()
   if (loading) return <div className="boot-screen"><AppLogo /><LoadingState label="Checking your session" /></div>
-  if (session) return <Navigate to={session.organization?.role === 'billing' ? '/reports' : '/dashboard'} replace />
+  if (session) {
+    const role = session.organization?.role
+    const dest = role === 'billing' ? '/reports' : role === 'agency_owner' ? '/clients' : '/dashboard'
+    return <Navigate to={dest} replace />
+  }
   return <Outlet />
 }
 

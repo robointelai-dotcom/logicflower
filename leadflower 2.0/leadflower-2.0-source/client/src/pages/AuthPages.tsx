@@ -19,8 +19,12 @@ function AuthLayout({ title, description, children, asideTitle = 'Automation wit
   )
 }
 
-function getDestination(state: unknown): string {
-  if (state && typeof state === 'object' && 'from' in state && typeof state.from === 'string' && state.from.startsWith('/') && !state.from.startsWith('//') && !state.from.includes('\\')) return state.from
+function getDestination(state: unknown, role?: string): string {
+  if (state && typeof state === 'object' && 'from' in state && typeof state.from === 'string' && state.from.startsWith('/') && !state.from.startsWith('//') && !state.from.includes('\\')) {
+    if (state.from !== '/dashboard') return state.from
+  }
+  if (role === 'billing') return '/reports'
+  if (role === 'agency_owner') return '/clients'
   return '/dashboard'
 }
 
@@ -38,7 +42,7 @@ export function LoginPage() {
     try {
       const result = await login(email.trim(), password)
       if (result.mfaRequired) navigate('/mfa-challenge', { replace: true, state: { challengeId: result.challengeId, from: getDestination(location.state) } })
-      else { const destination = getDestination(location.state); navigate(destination === '/dashboard' && result.session?.organization?.role === 'billing' ? '/reports' : destination, { replace: true }) }
+      else { navigate(getDestination(location.state, result.session?.organization?.role), { replace: true }) }
     } catch (requestError) { setError(errorMessage(requestError)) } finally { setBusy(false) }
   }
 
@@ -107,7 +111,7 @@ export function MfaChallengePage() {
   if (!state.challengeId) return <Navigate to="/login" replace />
   const submit = async (event: React.FormEvent) => {
     event.preventDefault(); setBusy(true); setError(null)
-    try { const next = await verifyMfa(state.challengeId ?? '', code.replace(/\s/g, ''), recovery); const destination = state.from ?? '/dashboard'; navigate(destination === '/dashboard' && next.organization?.role === 'billing' ? '/reports' : destination, { replace: true }) }
+    try { const next = await verifyMfa(state.challengeId ?? '', code.replace(/\s/g, ''), recovery); navigate(getDestination(location.state, next.organization?.role), { replace: true }) }
     catch (requestError) { setError(errorMessage(requestError)); setCode('') } finally { setBusy(false) }
   }
   return <AuthLayout title="Two-step verification" description={recovery ? 'Enter one of your unused recovery codes.' : 'Enter the six-digit code from your authenticator app.'}><form className="form-stack" onSubmit={submit}>{error && <Alert>{error}</Alert>}<div className="mfa-symbol"><ShieldCheck size={30} /></div><Field label={recovery ? 'Recovery code' : 'Verification code'} required><input className="code-input" inputMode={recovery ? 'text' : 'numeric'} autoComplete="one-time-code" maxLength={recovery ? 20 : 6} value={code} onChange={(event) => setCode(event.target.value)} placeholder={recovery ? 'XXXX-XXXX-XXXX' : '000000'} required autoFocus /></Field><Button variant="primary" busy={busy}>Verify and continue</Button><button type="button" className="link-button" onClick={() => { setRecovery((value) => !value); setCode(''); setError(null) }}>{recovery ? 'Use authenticator code' : 'Use a recovery code instead'}</button></form></AuthLayout>

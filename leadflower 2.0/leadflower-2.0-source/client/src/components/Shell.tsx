@@ -140,7 +140,7 @@ export default function Shell() {
   const changeOrganization = async (event: React.ChangeEvent<HTMLSelectElement>) => {
     const selected = session?.organizations.find((organization) => organization.id === event.target.value)
     setSwitching(true)
-    try { await switchOrganization(event.target.value); navigate(selected?.role === 'billing' ? '/reports' : '/dashboard') } finally { setSwitching(false) }
+    try { await switchOrganization(event.target.value); navigate(selected?.role === 'billing' ? '/reports' : selected?.role === 'agency_owner' ? '/clients' : '/dashboard') } finally { setSwitching(false) }
   }
 
   const sidebar = (
