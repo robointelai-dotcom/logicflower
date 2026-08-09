@@ -671,7 +671,7 @@ publicContentRouter.get('/article-shell/:slug', publicLimiter, asyncHandler(asyn
 }))
 
 publicContentRouter.get('/robots.txt', publicLimiter, asyncHandler(async (_req, res) => {
-  const site = await getSiteSettings()
+  const site = await settings()
   res.type('text/plain')
   
   if (site.robotsNoindexAll) return res.send('User-agent: *\nDisallow: /\n')
