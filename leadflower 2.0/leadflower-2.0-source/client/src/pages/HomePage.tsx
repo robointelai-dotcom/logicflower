@@ -182,50 +182,12 @@ export default function HomePage() {
       () => Object.assign(document.createElement('meta'), { name: 'description' }),
       (el) => el.setAttribute('content', description))
 
-    upsert('meta[name="keywords"]',
-      () => Object.assign(document.createElement('meta'), { name: 'keywords' }),
-      (el) => el.setAttribute('content', keywords))
-      
     upsert('link[rel="canonical"]',
       () => Object.assign(document.createElement('link'), { rel: 'canonical' }),
       (el) => el.setAttribute('href', typeof window !== 'undefined' ? window.location.origin + '/' : '/'))
   }, [])
 
   return <div className="marketing">
-    {/*
-      Structured data so search engines and AI assistants can extract what this
-      is without inferring it from prose. Escaped for the one sequence that can
-      terminate a script block early.
-    */}
-    <script type="application/ld+json" dangerouslySetInnerHTML={{
-      __html: JSON.stringify({
-        '@context': 'https://schema.org',
-        '@graph': [
-          {
-            '@type': 'SoftwareApplication',
-            name: 'LogicFlower',
-            applicationCategory: 'BusinessApplication',
-            operatingSystem: 'Web',
-            description,
-            offers: { '@type': 'Offer', category: 'SaaS' },
-          },
-          {
-            '@type': 'WebSite',
-            name: 'LogicFlower',
-            url: typeof window !== 'undefined' ? window.location.origin : 'https://logicflower.com',
-          },
-          {
-            '@type': 'FAQPage',
-            mainEntity: homeFaqs.map((faq) => ({
-              '@type': 'Question',
-              name: faq.q,
-              acceptedAnswer: { '@type': 'Answer', text: faq.a },
-            })),
-          }
-        ]
-      }).replace(/</g, '\\u003c'),
-    }} />
-
     <header className="marketing-nav">
       <Link to="/" className="marketing-brand"><AppLogo /></Link>
       <nav aria-label="Main">

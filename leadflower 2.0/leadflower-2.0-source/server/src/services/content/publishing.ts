@@ -164,15 +164,16 @@ export function renderRssFeed(input: {
   siteTitle: string
   siteDescription: string
   origin: string
+  selfHref?: string
   items: FeedItem[]
 }): string {
   const origin = String(input.origin || '').replace(/\/$/, '')
-  const self = `${origin}/rss.xml`
+  const self = input.selfHref || `${origin}/rss.xml`
   return `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>${xml(input.siteTitle || 'Blog')}</title>
-    <link>${xml(`${origin}/blog`)}</link>
+    <link>${xml(`${origin}/blog/`)}</link>
     <description>${xml(input.siteDescription || '')}</description>
     <atom:link href="${xml(self)}" rel="self" type="application/rss+xml"/>
 ${input.items.map((item) => `    <item>

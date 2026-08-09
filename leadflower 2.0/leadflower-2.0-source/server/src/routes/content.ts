@@ -596,9 +596,10 @@ publicContentRouter.get('/rss.xml', publicLimiter, asyncHandler(async (_req, res
     .select('title slug excerpt publishedAt authorName category').lean()
   res.type('application/rss+xml')
   res.send(renderRssFeed({
-    siteTitle: site.siteTitle || 'Blog',
-    siteDescription: site.siteDescription || '',
-    origin: String(site.canonicalDomain || ''),
+    siteTitle: 'LogicFlower Blog',
+    siteDescription: 'Practical guidance about lead follow-up, CRM, booking and reputation management.',
+    origin: 'https://logicflower.com',
+    selfHref: 'https://logicflower.com/api/v1/public/content/rss.xml',
     items: posts.map((post) => ({
       title: post.title, slug: post.slug, excerpt: post.excerpt || '',
       publishedAt: post.publishedAt, authorName: post.authorName, category: post.category,

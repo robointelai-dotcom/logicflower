@@ -39,45 +39,8 @@ function escapeHtml(value) {
     .replace(/"/g, '&quot;')
 }
 
-/**
- * Routes whose content is fixed at build time.
- *
- * Kept in step with `server/src/services/content/publicRoutes.ts` by the test
- * that reads both. A page missing here is a page whose social preview is wrong.
- */
-const HELP_ARTICLES = [
-  ['what-is-logicflower', 'What LogicFlower does, in one page', 'It answers every inquiry quickly, keeps following up, and stops the moment they reply.'],
-  ['setting-up-your-workspace', 'Setting up your workspace', 'One choice creates your pipeline, fields, follow-up and inquiry form.'],
-  ['today-screen', 'The Today screen', 'What needs a person, and what is running without one.'],
-  ['inbox-and-replies', 'The inbox, and what a reply does', 'One thread per person — and a reply stops all follow-up to them.'],
-  ['contacts-and-fields', 'Adding a contact, and every field on it', 'What a contact record holds, and why an email or phone is required.'],
-  ['using-tags', 'Tags, and how they drive automation', 'A tag can start follow-up, set a status or raise a task.'],
-  ['importing-contacts', 'Importing a spreadsheet', 'Map the columns, preview every row, then approve.'],
-  ['what-is-a-pipeline', 'Pipelines, stages and deals', 'Your work as a board — and moving a card is what starts follow-up.'],
-  ['what-is-a-sequence', 'What a sequence is', 'Timed follow-up that stops the moment someone replies.'],
-  ['writing-sequence-steps', 'Writing the steps', 'Channel, wait and message per step, plus quiet hours.'],
-  ['unknown-send-outcomes', 'Sends with an unknown outcome', 'What they mean, and why you must not simply retry them.'],
-  ['workflows-explained', 'Workflows: triggers, conditions and actions', 'The visual builder, for automation more complex than a straight sequence.'],
-  ['booking-pages', 'Booking pages and availability', 'A link customers use to pick a time that is genuinely free.'],
-  ['collecting-reviews', 'Asking for reviews', 'One request per customer, moderated by you, shown on your website.'],
-  ['social-posting', 'Social posting, and why it is not live yet', 'You can compose and schedule now. Publishing waits on platform approval.'],
-  ['ai-calling-safety', 'AI calling, and the rules it follows', 'Everything that keeps calling lawful is built. The dialling is not connected yet.'],
-  ['writing-a-voice-agent', 'Writing a voice agent', 'Brief it as you would a new member of staff.'],
-  ['who-can-see-your-data', 'Who can see your data', 'Nobody outside your business, unless you approve it — and it expires.'],
-  ['agency-access', 'If an agency manages your workspace', 'You decide whether they can walk in or must ask each time.'],
-  ['managing-clients', 'Managing client businesses', 'A triage board sorted by need, not alphabetically.'],
-]
-
-const LANDING_PAGES = [
-  ['/features/missed-call-text-back', 'Missed Call Text Back Software for Small Businesses',
-    'When you cannot answer, they get a text within seconds. Stop losing work to the next name on their list.'],
-  ['/features/follow-up-automation', 'Automated Follow-Up for Small Businesses — Stops on Reply',
-    'Multi-step follow-up by text and email that stops the moment somebody answers. No charge per message.'],
-  ['/solutions/crm-for-trades', 'CRM for Trades — Plumbers, Electricians, Builders',
-    'Quote-to-job pipeline, follow-up that stops on reply, and a booking link. Set up for your trade in a minute.'],
-  ['/compare/logicflower-vs-per-action-pricing', 'Automation Without Per-Action Fees — A Cost Comparison',
-    'Most platforms bill for every workflow step. Work out what that costs you at your own volume.'],
-]
+import { HELP_ARTICLES } from '../src/help/content.ts'
+import { MARKETING_PAGES } from '../src/marketing/pages.ts'
 
 const ROUTES = [
   ['/', 'Lead Follow-Up CRM for Small Businesses | LogicFlower',
@@ -86,8 +49,8 @@ const ROUTES = [
     'Practical writing about follow-up, booking and reputation for small businesses.'],
   ['/help', 'Help center — LogicFlower',
     'How everything works, written for a business owner rather than an engineer.'],
-  ...LANDING_PAGES,
-  ...HELP_ARTICLES.map(([slug, title, description]) => [`/help/${slug}`, `${title} — LogicFlower help`, description]),
+  ...MARKETING_PAGES.map((page) => [`/${page.kind === 'compare' ? 'compare' : page.kind === 'solution' ? 'solutions' : 'features'}/${page.slug}`, page.metaTitle, page.metaDescription]),
+  ...HELP_ARTICLES.map((article) => [`/help/${article.slug}`, `${article.title} — LogicFlower help`, article.summary]),
 ]
 
 /**
@@ -174,6 +137,42 @@ function buildHtml(template, route) {
         { '@type': 'Offer', name: 'Business', category: 'SaaS', price: '49', priceCurrency: 'USD' }
       ]
     })
+
+    jsonLd['@graph'].push({
+      '@type': 'FAQPage',
+      mainEntity: [
+        {
+          '@type': 'Question',
+          name: 'How is this cheaper than platforms that charge per action?',
+          acceptedAnswer: { '@type': 'Answer', text: 'They bill for each step a workflow takes. We do not charge per action at all — you connect your own email and SMS accounts and pay those providers directly for the messages. The calculator above shows the workflow fees you would stop paying; it does not include message costs, which you pay either way.' }
+        },
+        {
+          '@type': 'Question',
+          name: 'What happens when someone replies mid-sequence?',
+          acceptedAnswer: { '@type': 'Answer', text: 'Everything stops for that person, on every channel, immediately. Being chased three more times after you have already answered is the fastest way to lose a customer, so it is handled automatically rather than left to you to remember.' }
+        },
+        {
+          '@type': 'Question',
+          name: 'Do I need to be technical?',
+          acceptedAnswer: { '@type': 'Answer', text: 'No. Pick your trade when you sign up and you get a pipeline, follow-up sequences and an inquiry form already written for it. Change anything you like afterwards.' }
+        },
+        {
+          '@type': 'Question',
+          name: 'Can I really post to social media?',
+          acceptedAnswer: { '@type': 'Answer', text: 'Not yet, and we will say so plainly rather than surprise you. The composer, calendar and scheduling are built, but publishing needs each platform to approve our application — Meta, LinkedIn, TikTok and the rest. Those take weeks to months and some can be refused. We will announce it when it is genuinely working.' }
+        },
+        {
+          '@type': 'Question',
+          name: 'Is the AI calling available?',
+          acceptedAnswer: { '@type': 'Answer', text: 'Not yet. The parts that keep automated calling lawful are built and tested — calling hours in the customer’s own timezone, do-not-call checks that block rather than assume, spoken disclosure, mid-call opt-out. The dialling itself needs a telephony provider connected, and we will not turn it on before that is done properly.' }
+        },
+        {
+          '@type': 'Question',
+          name: 'What happens to my data?',
+          acceptedAnswer: { '@type': 'Answer', text: 'It stays yours. You can export everything, and delete it. Nobody from our team can open your workspace unless you approve it, that approval expires on its own, and you can see exactly who has access and withdraw it at any time.' }
+        }
+      ]
+    })
   }
 
   const jsonLdScript = `<script type="application/ld+json">${JSON.stringify(jsonLd).replace(/</g, '\\u003c')}</script>`
@@ -209,93 +208,125 @@ function buildHtml(template, route) {
           <p>No. Pick your trade when you sign up and you get a pipeline, follow-up sequences and an inquiry form already written for it. Change anything you like afterwards.</p>
         </article>
       </section>`
-  } else if (routePath === '/features/missed-call-text-back') {
-    extraContent = `
-      <nav aria-label="breadcrumb">
-        <ol><li><a href="/">Home</a></li><li><a href="/features/missed-call-text-back/">Missed Call Text Back</a></li></ol>
-      </nav>
-      <section>
-        <h2>Never miss another lead</h2>
-        <p>When you cannot answer, they get a text within seconds. Stop losing work to the next name on their list.</p>
-        <h3>How it works</h3>
-        <ul>
-          <li>Customer calls and goes to voicemail.</li>
-          <li>LogicFlower instantly sends an SMS asking how you can help.</li>
-          <li>They reply, keeping them engaged until you are free.</li>
-        </ul>
-      </section>`
-  } else if (routePath === '/features/follow-up-automation') {
-    extraContent = `
-      <nav aria-label="breadcrumb">
-        <ol><li><a href="/">Home</a></li><li><a href="/features/follow-up-automation/">Follow-Up Automation</a></li></ol>
-      </nav>
-      <section>
-        <h2>Automated Follow-Up</h2>
-        <p>Multi-step follow-up by text and email that stops the moment somebody answers.</p>
-        <h3>Core Capabilities</h3>
-        <ul>
-          <li>Multi-channel touchpoints (SMS and Email).</li>
-          <li>Automatic pause on reply so you never spam an engaged lead.</li>
-          <li>Pre-built templates for common industries.</li>
-        </ul>
-      </section>`
-  } else if (routePath === '/solutions/crm-for-trades') {
-    extraContent = `
-      <nav aria-label="breadcrumb">
-        <ol><li><a href="/">Home</a></li><li><a href="/solutions/crm-for-trades/">CRM for Trades</a></li></ol>
-      </nav>
-      <section>
-        <h2>Built for Contractors and Trades</h2>
-        <p>Quote-to-job pipeline, follow-up that stops on reply, and a booking link.</p>
-        <h3>Industry Features</h3>
-        <ul>
-          <li>Drag-and-drop job pipeline (New Inquiry, Quoted, Scheduled, Done).</li>
-          <li>Automated appointment reminders.</li>
-          <li>Review collection requests post-job.</li>
-        </ul>
-      </section>`
-  } else if (routePath === '/compare/logicflower-vs-per-action-pricing') {
-    extraContent = `
-      <nav aria-label="breadcrumb">
-        <ol><li><a href="/">Home</a></li><li><a href="/compare/logicflower-vs-per-action-pricing/">Pricing Comparison</a></li></ol>
-      </nav>
-      <section>
-        <h2>Automation Without Per-Action Fees</h2>
-        <p>Most platforms bill for every workflow step. Work out what that costs you at your own volume.</p>
-        <h3>The LogicFlower Difference</h3>
-        <ul>
-          <li>Unlimited workflow steps.</li>
-          <li>Flat monthly rate for the Business plan.</li>
-          <li>No hidden costs as you scale your marketing.</li>
-        </ul>
-      </section>`
-  } else if (routePath.startsWith('/help/')) {
-    extraContent = `
-      <nav aria-label="breadcrumb">
-        <ol><li><a href="/">Home</a></li><li><a href="/help/">Help Center</a></li><li><a href="${routePath}/">${escapeHtml(title.split(' — ')[0])}</a></li></ol>
-      </nav>
-      <article>
-        <h2>${escapeHtml(title.split(' — ')[0])}</h2>
-        <p>${escapeHtml(description)}</p>
-        <section>
-          <h3>Guide Details</h3>
-          <p>This is a complete operational guide for workspace owners. For full interactive instructions, please enable JavaScript or view the application directly.</p>
-        </section>
-      </article>`
-  } else if (routePath === '/help') {
-    extraContent = `
-      <nav aria-label="breadcrumb">
-        <ol><li><a href="/">Home</a></li><li><a href="/help/">Help Center</a></li></ol>
-      </nav>
-      <section>
-        <h2>Help Center Categories</h2>
-        <ul>
-          <li>Workspace Setup</li>
-          <li>CRM and Contacts</li>
-          <li>Automation Sequences</li>
-          <li>Security and Billing</li>
-        </ul>
-      </section>`
+  } else {
+    // Check if it's a marketing page
+    const marketingPage = MARKETING_PAGES.find(p => routePath.endsWith(`/${p.slug}`))
+    if (marketingPage) {
+      extraContent = `
+        <nav aria-label="breadcrumb">
+          <ol><li><a href="/">Home</a></li><li><a href="${routePath}/">${escapeHtml(marketingPage.title)}</a></li></ol>
+        </nav>
+        <article class="landing">
+          <header>
+            <p>${marketingPage.kind === 'compare' ? 'Comparison' : marketingPage.kind === 'solution' ? 'For your trade' : 'Feature'}</p>
+            <h1>${escapeHtml(marketingPage.title)}</h1>
+            <p>${escapeHtml(marketingPage.standfirst)}</p>
+          </header>
+          ${marketingPage.sections.map(s => `
+            <section>
+              <h2>${escapeHtml(s.heading)}</h2>
+              <p>${escapeHtml(s.body)}</p>
+              ${s.points?.length ? `<ul>${s.points.map(p => `<li>${escapeHtml(p)}</li>`).join('')}</ul>` : ''}
+            </section>
+          `).join('')}
+          ${marketingPage.caveat ? `<p>${escapeHtml(marketingPage.caveat)}</p>` : ''}
+          <section>
+            <h2>Questions</h2>
+            <div class="faq">
+              ${marketingPage.faqs.map(f => `
+                <details>
+                  <summary>${escapeHtml(f.question)}</summary>
+                  <p>${escapeHtml(f.answer)}</p>
+                </details>
+              `).join('')}
+            </div>
+          </section>
+          ${marketingPage.relatedSlugs?.length ? `
+            <section>
+              <h2>Related</h2>
+              <ul>
+                ${marketingPage.relatedSlugs.map(slug => {
+                  const related = MARKETING_PAGES.find(p => p.slug === slug)
+                  return related ? `<li><a href="/${related.kind === 'compare' ? 'compare' : related.kind === 'solution' ? 'solutions' : 'features'}/${slug}/">${escapeHtml(related.title)}</a></li>` : ''
+                }).join('')}
+              </ul>
+            </section>
+          ` : ''}
+        </article>
+      `
+    } else {
+      // Check if it's a help article
+      const helpArticle = HELP_ARTICLES.find(a => routePath === `/help/${a.slug}`)
+      if (helpArticle) {
+        extraContent = `
+          <nav aria-label="breadcrumb">
+            <ol><li><a href="/">Home</a></li><li><a href="/help/">Help Center</a></li><li><a href="${routePath}/">${escapeHtml(helpArticle.title)}</a></li></ol>
+          </nav>
+          <article>
+            <header>
+              <h2>${escapeHtml(helpArticle.title)}</h2>
+              <p>${escapeHtml(helpArticle.summary)}</p>
+            </header>
+            <section>
+              <h3>What it is</h3>
+              <p>${escapeHtml(helpArticle.whatItIs)}</p>
+            </section>
+            <section>
+              <h3>Why use it</h3>
+              <p>${escapeHtml(helpArticle.whyUseIt)}</p>
+            </section>
+            ${helpArticle.example ? `
+              <section>
+                <h3>Example</h3>
+                <p>${escapeHtml(helpArticle.example)}</p>
+              </section>
+            ` : ''}
+            <section>
+              <h3>Steps</h3>
+              <ol>
+                ${helpArticle.steps.map(s => `<li>${escapeHtml(s)}</li>`).join('')}
+              </ol>
+            </section>
+            ${helpArticle.terms?.length ? `
+              <section>
+                <h3>Terms</h3>
+                <dl>
+                  ${helpArticle.terms.map(t => `<dt>${escapeHtml(t.term)}</dt><dd>${escapeHtml(t.meaning)}</dd>`).join('')}
+                </dl>
+              </section>
+            ` : ''}
+            ${helpArticle.whatHappensNext ? `
+              <section>
+                <h3>What happens next</h3>
+                <p>${escapeHtml(helpArticle.whatHappensNext)}</p>
+              </section>
+            ` : ''}
+            ${helpArticle.problems?.length ? `
+              <section>
+                <h3>Common problems</h3>
+                <dl>
+                  ${helpArticle.problems.map(p => `<dt>${escapeHtml(p.problem)}</dt><dd>${escapeHtml(p.answer)}</dd>`).join('')}
+                </dl>
+              </section>
+            ` : ''}
+          </article>
+        `
+      } else if (routePath === '/help') {
+        extraContent = `
+          <nav aria-label="breadcrumb">
+            <ol><li><a href="/">Home</a></li><li><a href="/help/">Help Center</a></li></ol>
+          </nav>
+          <section>
+            <h2>Help Center Categories</h2>
+            <ul>
+              <li>Workspace Setup</li>
+              <li>CRM and Contacts</li>
+              <li>Automation Sequences</li>
+              <li>Security and Billing</li>
+            </ul>
+          </section>`
+      }
+    }
   }
 
   // Inject a basic HTML shell into the root div so non-JS crawlers see the content
