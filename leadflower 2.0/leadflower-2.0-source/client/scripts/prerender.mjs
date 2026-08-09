@@ -175,6 +175,36 @@ function buildHtml(template, route) {
     })
   }
 
+  const marketingPage = MARKETING_PAGES.find(p => routePath.endsWith(`/${p.slug}`))
+
+  if (marketingPage) {
+    jsonLd['@graph'].push({
+      '@type': 'WebPage',
+      '@id': `${canonical}#page`,
+      name: marketingPage.metaTitle,
+      description: marketingPage.metaDescription,
+      url: canonical,
+    })
+    jsonLd['@graph'].push({
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Home', item: canonicalBase },
+        { '@type': 'ListItem', position: 2, name: marketingPage.title, item: canonical },
+      ],
+    })
+    if (marketingPage.faqs.length > 0) {
+      jsonLd['@graph'].push({
+        '@type': 'FAQPage',
+        isPartOf: { '@id': `${canonical}#page` },
+        mainEntity: marketingPage.faqs.map((faq) => ({
+          '@type': 'Question',
+          name: faq.question,
+          acceptedAnswer: { '@type': 'Answer', text: faq.answer },
+        })),
+      })
+    }
+  }
+
   const jsonLdScript = `<script type="application/ld+json">${JSON.stringify(jsonLd).replace(/</g, '\\u003c')}</script>`
 
   html = html.replace('</head>', `  ${head}\n    ${jsonLdScript}\n  </head>`)
@@ -219,7 +249,7 @@ function buildHtml(template, route) {
         <article class="landing">
           <header>
             <p>${marketingPage.kind === 'compare' ? 'Comparison' : marketingPage.kind === 'solution' ? 'For your trade' : 'Feature'}</p>
-            <h1>${escapeHtml(marketingPage.title)}</h1>
+            <h1>${escapeHtml(marketingPage.metaTitle)}</h1>
             <p>${escapeHtml(marketingPage.standfirst)}</p>
           </header>
           ${marketingPage.sections.map(s => `
@@ -330,6 +360,7 @@ function buildHtml(template, route) {
   }
 
   // Inject a basic HTML shell into the root div so non-JS crawlers see the content
+  const isCustomArticle = routePath.startsWith('/features/') || routePath.startsWith('/solutions/') || routePath.startsWith('/compare/') || routePath.startsWith('/help/')
   const fallbackHtml = `
     <header>
       <nav>
@@ -343,9 +374,11 @@ function buildHtml(template, route) {
       </nav>
     </header>
     <main>
-      <h1>${escapeHtml(title.split(' | ')[0].split(' — ')[0])}</h1>
-      <p>${escapeHtml(description)}</p>
-      ${extraContent}
+      ${isCustomArticle ? extraContent : `
+        <h1>${escapeHtml(title.split(' | ')[0].split(' — ')[0])}</h1>
+        <p>${escapeHtml(description)}</p>
+        ${extraContent}
+      `}
     </main>
   `
   html = html.replace('<div id="root"></div>', `<div id="root">${fallbackHtml}</div>`)

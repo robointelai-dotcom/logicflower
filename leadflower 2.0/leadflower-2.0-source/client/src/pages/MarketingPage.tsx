@@ -48,42 +48,7 @@ export default function MarketingLandingPage() {
     return <div className="marketing"><section className="section"><h1>Page not found</h1><Link to="/">Back to the homepage</Link></section></div>
   }
 
-  const origin = typeof window === 'undefined' ? '' : window.location.origin
-  const structuredData = {
-    '@context': 'https://schema.org',
-    '@graph': [
-      {
-        '@type': 'WebPage',
-        '@id': `${origin}${canonicalPath}#page`,
-        name: page.metaTitle,
-        description: page.metaDescription,
-        url: `${origin}${canonicalPath}`,
-      },
-      {
-        '@type': 'BreadcrumbList',
-        itemListElement: [
-          { '@type': 'ListItem', position: 1, name: 'Home', item: `${origin}/` },
-          { '@type': 'ListItem', position: 2, name: page.title, item: `${origin}${canonicalPath}` },
-        ],
-      },
-      // Bound to the page rather than floating, so the questions are understood
-      // as being about this page.
-      ...(page.faqs.length ? [{
-        '@type': 'FAQPage',
-        isPartOf: { '@id': `${origin}${canonicalPath}#page` },
-        mainEntity: page.faqs.map((faq) => ({
-          '@type': 'Question',
-          name: faq.question,
-          acceptedAnswer: { '@type': 'Answer', text: faq.answer },
-        })),
-      }] : []),
-    ],
-  }
-
   return <div className="marketing">
-    <script type="application/ld+json" dangerouslySetInnerHTML={{
-      __html: JSON.stringify(structuredData).replace(/</g, '\\u003c'),
-    }} />
 
     <header className="marketing-nav">
       <Link to="/" className="marketing-brand"><AppLogo /></Link>
@@ -94,7 +59,7 @@ export default function MarketingLandingPage() {
     <article className="landing">
       <header className="landing-head">
         <p className="eyebrow">{page.kind === 'compare' ? 'Comparison' : page.kind === 'solution' ? 'For your trade' : 'Feature'}</p>
-        <h1>{page.title}</h1>
+        <h1>{page.metaTitle}</h1>
         <p className="landing-standfirst">{page.standfirst}</p>
         <Link to="/signup" className="btn-primary-lg">Start free<ArrowRight size={17} /></Link>
       </header>

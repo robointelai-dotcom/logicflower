@@ -14,7 +14,7 @@ import { useAction, useApi } from '../hooks/useApi'
  *
  * One choice here seeds a pipeline, custom fields, follow-up sequences and an
  * inquiry form. Everything it creates is ordinary and editable — the pack is a
- * starting point, not a mould.
+ * starting point, not a template.
  */
 
 interface SnapshotSummary {
@@ -61,7 +61,7 @@ export default function OnboardingWizardPage() {
 
   if (applied) {
     return <>
-      <PageHeader eyebrow="Setup" title="You're set up" description="Everything below is yours to change — the pack is a starting point, not a mould." />
+      <PageHeader eyebrow="Setup" title="You're set up" description="Everything below is yours to change — the pack is a starting point, not a template." />
       <Card>
         <ul className="setup-summary">
           {applied.pipeline.created && <li><Check size={16} />Pipeline created with its stages</li>}

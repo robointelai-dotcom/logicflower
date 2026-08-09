@@ -152,7 +152,7 @@ const homeFaqs = [
   },
   {
     q: 'Is the AI calling available?',
-    a: 'Not yet. The parts that keep automated calling lawful are built and tested — calling hours in the customer’s own timezone, do-not-call checks that block rather than assume, spoken disclosure, mid-call opt-out. The dialling itself needs a telephony provider connected, and we will not turn it on before that is done properly.',
+    a: 'Not yet. The parts that keep automated calling lawful are built and tested — calling hours in the customer’s own timezone, do-not-call checks that block rather than assume, spoken disclosure, mid-call opt-out. The dialing itself needs a telephony provider connected, and we will not turn it on before that is done properly.',
   },
   {
     q: 'What happens to my data?',
@@ -312,7 +312,7 @@ export default function HomePage() {
           show it on your website with a widget that takes one line of code.
         </Pillar>
         <Pillar icon={<MessageSquareText size={20} />} eyebrow="Social & voice" title="Posting and AI calling" status="coming">
-          The composer, calendar and calling safeguards are built. Publishing and dialling need
+          The composer, calendar and calling safeguards are built. Publishing and dialing need
           approval from each platform and telephony provider, which we are working through — so we
           will not sell it as ready until it is.
         </Pillar>

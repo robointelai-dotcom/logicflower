@@ -50,13 +50,13 @@ export const HELP_ARTICLES: HelpArticle[] = [
     slug: 'what-is-logicflower',
     title: 'What this does, in one page',
     category: 'getting-started',
-    summary: 'The short version: it answers enquiries fast and stops when someone replies.',
+    summary: 'The short version: it answers inquiries fast and stops when someone replies.',
     whatItIs:
       'A system that answers every inquiry quickly, keeps following up until the person replies, and stops the '
       + 'moment they do. Everything else — the contact record, the pipeline, the booking link, the reviews — '
       + 'exists to support that.',
     whyUseIt:
-      'Most enquiries go to whoever replies first. A business that answers in minutes wins work from one that '
+      'Most inquiries go to whoever replies first. A business that answers in minutes wins work from one that '
       + 'answers tomorrow, and nobody can reply in minutes all day while also doing the job.',
     example:
       'Someone rings while you are on a job. They get a text within seconds. They reply asking for a quote. Every '
@@ -96,7 +96,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
       'Read the notes attached to your pack before switching anything on.',
     ],
     terms: [
-      { term: 'Starter pack', meaning: 'The set of stages, fields, sequences and forms written for a trade. A starting point, not a mould.' },
+      { term: 'Starter pack', meaning: 'The set of stages, fields, sequences and forms written for a trade. A starting point, not a template.' },
       { term: 'Draft', meaning: 'Created but not switched on. Nothing is sent to anyone while something is a draft.' },
     ],
     whatHappensNext:
@@ -492,7 +492,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
     title: 'AI calling, and the rules it follows',
     category: 'calling',
     route: '/voice',
-    summary: 'Everything that keeps calling lawful is built. The dialling is not connected yet.',
+    summary: 'Everything that keeps calling lawful is built. The dialing is not connected yet.',
     whatItIs:
       'Voice agents that answer or place calls, wrapped in checks that run before any call is placed.',
     whyUseIt:

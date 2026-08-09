@@ -289,7 +289,7 @@ export default function ContentEditorPage() {
         <Card title="Article" subtitle="Markdown. Headings become anchors and a contents list.">
           <Field label="">
             <textarea rows={22} className="markdown-editor" value={post.body ?? ''} onChange={(event) => set('body', event.target.value)}
-              placeholder={'## Why speed matters\n\nMost enquiries go to whoever replies first...\n\n- One\n- Two\n\n> A quote.'} />
+              placeholder={'## Why speed matters\n\nMost inquiries go to whoever replies first...\n\n- One\n- Two\n\n> A quote.'} />
           </Field>
         </Card>
       </div>

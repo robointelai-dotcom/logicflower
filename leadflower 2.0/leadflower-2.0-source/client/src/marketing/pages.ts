@@ -46,7 +46,7 @@ export const MARKETING_PAGES: MarketingPage[] = [
     title: 'Missed call text back',
     metaTitle: 'Missed Call Text Back Software for Small Businesses',
     metaDescription: 'When you cannot answer, they get a text within seconds. Stop losing work to the next name on their list.',
-    intent: 'Somebody searching for a way to stop losing enquiries they could not answer.',
+    intent: 'Somebody searching for a way to stop losing inquiries they could not answer.',
     standfirst:
       'You are on a job. The phone rings. By the time you call back they have booked somebody else. '
       + 'A text sent within seconds keeps the conversation alive.',
@@ -66,7 +66,7 @@ export const MARKETING_PAGES: MarketingPage[] = [
       {
         heading: 'Why the first reply matters more than the best price',
         body:
-          'Most enquiries go to whoever answers first. A business that replies in seconds wins work from one that '
+          'Most inquiries go to whoever answers first. A business that replies in seconds wins work from one that '
           + 'replies tomorrow, and nobody can answer every call while also doing the job. This closes that gap '
           + 'without adding a person.',
       },
@@ -146,7 +146,7 @@ export const MARKETING_PAGES: MarketingPage[] = [
     title: 'A CRM for trades and home services',
     metaTitle: 'CRM for Trades — Plumbers, Electricians, Builders',
     metaDescription: 'Quote-to-job pipeline, follow-up that stops on reply, and a booking link. Set up for your trade in a minute.',
-    intent: 'A tradesperson looking for something simpler than an enterprise CRM.',
+    intent: 'A contractor or home-service business looking for something simpler than an enterprise CRM.',
     standfirst:
       'Inquiry, survey, quote, scheduled, done. Your work as a board, with the chasing handled for you.',
     sections: [
@@ -154,7 +154,7 @@ export const MARKETING_PAGES: MarketingPage[] = [
         heading: 'Set up for your trade, not for a sales team',
         body:
           'Pick trades and home services when you sign up and your pipeline stages, custom fields, follow-up and '
-          + 'inquiry form are written for you. Change any of it — it is a starting point, not a mould.',
+          + 'inquiry form are written for you. Change any of it — it is a starting point, not a template.',
         points: [
           'Stages that match how a job actually moves',
           'Site address, access notes and job type as real fields',
@@ -190,12 +190,12 @@ export const MARKETING_PAGES: MarketingPage[] = [
     intent: 'Somebody comparing platforms on cost, or unhappy with a bill that grows as they grow.',
     standfirst:
       'Most automation platforms charge for every step they take. Every text, every wait, every branch. '
-      + 'Grow from 200 enquiries to 2,000 and the bill grows with it.',
+      + 'Grow from 200 inquiries to 2,000 and the bill grows with it.',
     sections: [
       {
         heading: 'Where the money goes',
         body:
-          'A per-action platform bills each step a workflow runs. A ten-step follow-up across 10,000 enquiries is '
+          'A per-action platform bills each step a workflow runs. A ten-step follow-up across 10,000 inquiries is '
           + '100,000 actions. At a penny each that is a four-figure monthly bill before a single message has been '
           + 'paid for.',
         points: [
