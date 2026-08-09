@@ -1,5 +1,5 @@
 import React from 'react'
-import { ArrowLeft, Clock } from 'lucide-react'
+import { ArrowLeft, BadgeCheck, Clock, Quote, Sparkles } from 'lucide-react'
 import { Link, useParams } from '../router'
 import { AppLogo } from '../components/ui'
 
@@ -28,7 +28,13 @@ interface Article {
     headings: Array<{ level: 2 | 3; text: string; id: string }>
     readingMinutes: number; authorName: string; authorTitle?: string
     category: string; tags: string[]; publishedAt: string; modifiedAt: string
+    featuredImageUrl?: string | null; featuredImageAlt?: string
+    isPreview?: boolean
   }
+  capsules?: Array<{ question: string; answer: string }>
+  freshness?: { weeksSinceReview: number | null; needsReview: boolean; reason: string }
+  author?: { name: string; jobTitle?: string; bio?: string; knowsAbout?: string[]; sameAs?: string[] } | null
+  informationGainSource?: string
   seo: { title: string; description: string; canonical: string; noindex: boolean }
   structuredData: Record<string, unknown>
   related: Array<{ title: string; slug: string; excerpt: string; readingMinutes: number }>
@@ -88,6 +94,16 @@ export function BlogIndexPage() {
 
   React.useEffect(() => {
     document.title = 'Blog — LogicFlower'
+    // Lets a reader subscribe, and lets aggregators find the feed.
+    let link = document.head.querySelector('link[rel="alternate"][type="application/rss+xml"]')
+    if (!link) {
+      link = document.createElement('link')
+      link.setAttribute('rel', 'alternate')
+      link.setAttribute('type', 'application/rss+xml')
+      link.setAttribute('title', 'LogicFlower blog')
+      link.setAttribute('href', `${API}/rss.xml`)
+      document.head.appendChild(link)
+    }
     void (async () => {
       try {
         const data = await getJson<{ posts: PostSummary[] }>(`${API}/posts${category ? `?category=${encodeURIComponent(category)}` : ''}`)
@@ -167,24 +183,104 @@ export default function BlogArticlePage() {
 
     <article className="section article">
       <p className="back-link"><Link to="/blog"><ArrowLeft size={13} /> All articles</Link></p>
+      {/*
+        A preview is an unpublished draft reached with a token. Saying so is not
+        decoration: without it somebody sends the link to a customer believing
+        the article is live.
+      */}
+      {article.isPreview && <p className="preview-banner">
+        Draft preview — this article is not published. Anyone with this link can read it.
+      </p>}
+
       <header className="article-head">
         <span className="eyebrow">{article.category}</span>
         <h1>{article.title}</h1>
         {article.excerpt && <p className="article-standfirst">{article.excerpt}</p>}
-        <p className="article-meta">
-          {article.authorName && <span>{article.authorName}{article.authorTitle ? `, ${article.authorTitle}` : ''}</span>}
+
+        {/*
+          The author card carries what makes the byline worth trusting: what
+          they do, what they know about, and where that can be corroborated. A
+          name on its own asserts nothing.
+        */}
+        {data.author ? <div className="author-card">
+          <div className="author-identity">
+            <span className="author-avatar" aria-hidden="true">{data.author.name.slice(0, 1)}</span>
+            <div>
+              <strong>{data.author.name}</strong>
+              {data.author.jobTitle && <span className="muted">{data.author.jobTitle}</span>}
+            </div>
+          </div>
+
+          {Boolean(data.author.knowsAbout?.length) && <p className="author-expertise">
+            Writes about {data.author.knowsAbout!.slice(0, 3).join(', ')}
+          </p>}
+
+          <div className="author-meta">
+            <time dateTime={article.publishedAt}>
+              {new Date(article.publishedAt).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' })}
+            </time>
+            <span><Clock size={13} /> {article.readingMinutes} min read</span>
+            {/*
+              Claimed only where a review was actually recorded. A badge saying
+              "fact-checked" on an article nobody checked is worse than no badge.
+            */}
+            {data.freshness && !data.freshness.needsReview && data.freshness.weeksSinceReview !== null && (
+              <span className="verified-badge"><BadgeCheck size={13} />{data.freshness.reason}</span>
+            )}
+            {data.freshness?.needsReview && (
+              <span className="stale-badge">{data.freshness.reason}</span>
+            )}
+          </div>
+
+          {Boolean(data.author.sameAs?.length) && <p className="author-links">
+            {data.author.sameAs!.slice(0, 3).map((url) => (
+              <a key={url} href={url} target="_blank" rel="noopener nofollow me">{new URL(url).hostname.replace('www.', '')}</a>
+            ))}
+          </p>}
+        </div> : <p className="article-meta">
           <time dateTime={article.publishedAt}>{new Date(article.publishedAt).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' })}</time>
           <span><Clock size={13} /> {article.readingMinutes} min read</span>
-        </p>
+        </p>}
       </header>
+
+      {/*
+        The signature element.
+        
+        These are the answers written to be lifted whole and quoted — by a
+        reader skimming, and by a retrieval system summarising. Marking them
+        visibly is honest about what they are: this is the part of the article
+        designed to be taken away.
+      */}
+      {Boolean(data.capsules?.length) && <aside className="takeaways" aria-label="Key takeaways">
+        <p className="takeaways-label"><Sparkles size={14} />Key takeaways</p>
+        <dl>
+          {data.capsules!.map((capsule) => <div key={capsule.question}>
+            <dt>{capsule.question}</dt>
+            <dd><Quote size={13} aria-hidden="true" />{capsule.answer}</dd>
+          </div>)}
+        </dl>
+      </aside>}
 
       {showContents && <nav className="article-contents" aria-label="On this page">
         <p className="eyebrow">On this page</p>
         <ol>{article.headings.filter((heading) => heading.level === 2).map((heading) => <li key={heading.id}><a href={`#${heading.id}`}>{heading.text}</a></li>)}</ol>
       </nav>}
 
+      {article.featuredImageUrl && <img
+        className="article-hero"
+        src={article.featuredImageUrl}
+        alt={article.featuredImageAlt ?? ''}
+        loading="lazy"
+        decoding="async"
+      />}
+
       {/* Server-rendered and server-escaped. See the note at the top of this file. */}
       <div className="article-body" dangerouslySetInnerHTML={{ __html: article.html }} />
+
+      {data.informationGainSource && <aside className="information-gain">
+        <p className="eyebrow">What this is based on</p>
+        <p>{data.informationGainSource}</p>
+      </aside>}
 
       {Boolean(article.tags.length) && <div className="chip-row">{article.tags.map((tag) => <span key={tag} className="chip">{tag}</span>)}</div>}
     </article>

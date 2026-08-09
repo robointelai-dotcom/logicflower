@@ -351,3 +351,108 @@ standing between an agency and somebody else's client.
       a draft.
 - [ ] Deleting a page with upcoming appointments is refused without explicit
       confirmation, and the appointments survive the deletion.
+
+## Blog scheduling, images, previews and feeds
+
+- [ ] **A scheduled article publishes itself.** Schedule one two minutes out,
+      wait, and confirm it appears publicly without anybody touching it. This
+      previously did nothing at all: the date was stored and no worker acted on
+      it, so the launch that was meant to happen on Tuesday silently did not.
+- [ ] Two application instances running together publish it **once**, not twice.
+      The claim is a conditional update; verify by watching the audit log.
+- [ ] A scheduled article is **not** reachable at its public URL before its time.
+- [ ] Uploading an SVG is refused, even renamed to `.png`.
+- [ ] Uploading a PHP or text file with `Content-Type: image/png` is refused —
+      the bytes are checked, not the label.
+- [ ] A served blog image carries `X-Content-Type-Options: nosniff`.
+- [ ] A preview link opens an unpublished draft, shows the draft banner, and
+      carries a `noindex` robots tag whatever the article's own setting says.
+- [ ] Creating a new preview link **revokes** the previous one.
+- [ ] A wrong or truncated preview token is refused.
+- [ ] `/rss.xml` validates in a feed reader. Publish an article whose title
+      contains an ampersand and confirm the feed still parses.
+- [ ] Feed links use the configured canonical origin, with no double slash.
+
+## Entity graph, capsules and editorial verification
+
+- [ ] The article page emits **one** `@graph`, not several separate blocks, and
+      the article's `author` `@id` matches the `Person` node's `@id`.
+- [ ] Validate a published article at validator.schema.org and Google's Rich
+      Results Test. Both must pass with no warnings.
+- [ ] **An article with no recorded reviewer emits no `reviewedBy`.** Confirm by
+      publishing one without a review date. Asserting a review that did not
+      happen is a false statement about editorial process, not an SEO tactic.
+- [ ] Naming a reviewer without a review date, or a date without a name, also
+      emits nothing.
+- [ ] An answer capsule outside 40–60 words is refused on save, with the reason.
+- [ ] A capsule beginning "As mentioned above" is refused — it cannot survive
+      being quoted away from the page.
+- [ ] An article last reviewed more than 13 weeks ago shows the stale badge, and
+      one reviewed recently shows the verified badge.
+- [ ] **AVIF:** `supportsAvif()` reports what this deployment can actually do.
+      The build tested during development returned false, so only WebP and the
+      original format are generated. If AVIF is wanted, deploy a sharp build
+      with the encoder compiled in and confirm `<source type="image/avif">`
+      appears — and that the files behind it exist.
+- [ ] A figure's `alt` and its `figcaption` are different sentences. A screen
+      reader must not announce the same text twice.
+- [ ] Images carry intrinsic `width` and `height`, and the text does not jump as
+      the page loads.
+
+## Search coverage
+
+- [ ] `sitemap.xml` contains the homepage, blog index, help centre, all 20 help
+      articles, all 4 landing pages, and every published article.
+- [ ] It contains **no** entry for a page that returns 404. A sitemap listing
+      dead URLs erodes trust in the whole file.
+- [ ] Featured images appear as `<image:image>` entries against their articles.
+- [ ] Adding a help article or landing page without updating
+      `publicRoutes.ts` **fails the build**. Confirm by adding one and running
+      the tests — that guard is the only thing stopping the manifest rotting.
+- [ ] Breadcrumbs validate in Google's Rich Results Test.
+- [ ] An unknown URL renders the 404 page with `noindex`. **Note it still
+      returns HTTP 200** — nginx serves index.html for everything. A real 404
+      status needs prerendering, and is recorded as outstanding.
+- [ ] Each landing page has a distinct title, description and canonical.
+
+## Prerendering and crawler metadata
+
+- [ ] Set `CANONICAL_ORIGIN` before the production build. Without it canonical
+      URLs are relative, which most crawlers and every social scraper ignore.
+      The build warns when it is missing.
+- [ ] `curl` a landing page and a help article. **The correct title and
+      description must be in the raw HTML**, with no JavaScript executed:
+      `curl -s https://.../features/missed-call-text-back | grep -i '<title>'`
+- [ ] Only ONE `<title>` and one description per page. The generic ones from the
+      template are removed, not merely appended to.
+- [ ] `curl` a blog article. Same check — that one is served by the API at
+      request time, not baked at build time, so it exercises a different path.
+- [ ] Share a blog article on LinkedIn, Slack and WhatsApp. Each preview card
+      must show that article's title, description and image. This is the symptom
+      the whole change exists to fix.
+- [ ] Requesting a blog slug that does not exist returns **404**, not 200.
+- [ ] With the API stopped, `/blog/some-article` still loads for a human — the
+      shell falls back to a redirect and only the crawler metadata is lost.
+- [ ] The `client_dist` volume is populated. If the API logs a missing shell,
+      the web container has not published it: check
+      `/docker-entrypoint.d/40-publish-shell.sh` ran.
+- [ ] Prerendered pages still hydrate. Navigate between them in a browser and
+      confirm the app behaves as a single-page application, not a series of full
+      reloads.
+
+## Share cards and editorial guidance
+
+- [ ] Set `CANONICAL_ORIGIN` **and** `SOCIAL_IMAGE_PATH` on the client build.
+      Without the first, og:image is omitted entirely rather than emitted
+      relative — a relative one produces a blank card, which reads as a broken
+      link.
+- [ ] Paste a landing page, a help article and a blog article into LinkedIn's
+      Post Inspector. Each must show its own title, description and an image.
+- [ ] The share card is 1200x630. The default (`/ecosystem.jpg`) is a reused
+      diagram; replace it with a purpose-built card before launch.
+- [ ] Setting a search intent shows the matching checks in the editor, and
+      **publishing is never blocked by them**. Confirm an article with every
+      check unmet still publishes — these are prompts, and a rule that blocks
+      publication gets worked around rather than followed.
+- [ ] Recording a review date without a reviewer name claims nothing in the
+      structured data, and neither does a name without a date.

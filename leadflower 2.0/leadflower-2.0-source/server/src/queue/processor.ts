@@ -27,6 +27,7 @@ import { enqueueDataLifecycleRequest, processDataLifecycleRequest, reconcileData
 import { runSchedulerTick } from '../services/sequences/scheduler';
 import { reconcileSocialPosts } from '../services/social/trypostPublisher';
 import { runDialerTick } from '../services/voice/dialer';
+import { publishDueArticles } from '../services/content/publishing';
 import { trypostConfigured } from '../services/social/trypostClient';
 
 const connection = { url: env.REDIS_URL };
@@ -110,6 +111,9 @@ export async function startWorkers() {
 
   const workers = [workflowWorker, batchWorker, monitoringWorker, notificationWorker, connectionScanWorker, dataLifecycleWorker];
   recurringMaintenance('webhook-outbox', 30_000, () => reconcileWebhookDeliveries());
+  // Without this, a scheduled article stays scheduled forever and the launch
+  // that was meant to happen on Tuesday silently did not.
+  recurringMaintenance('blog-scheduler', 60_000, () => publishDueArticles());
   recurringMaintenance('batch-recovery', 60_000, () => reconcileBatchJobs());
   recurringMaintenance('notification-outbox', 30_000, () => reconcileNotificationAlerts());
   recurringMaintenance('connection-deletion', 30_000, () => processConnectionDeletionTasks());

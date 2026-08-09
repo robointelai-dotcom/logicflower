@@ -25,10 +25,63 @@ const BlogPostSchema = new Schema({
 
   authorName: { type: String, default: '' },
   authorTitle: String,
+  /**
+   * The author as an entity, not a byline.
+   *
+   * `knowsAbout`, `alumniOf` and `sameAs` are what turn a name into something a
+   * retrieval system can corroborate. They are emitted only where recorded —
+   * an author node claiming expertise nobody entered is a fabrication.
+   */
+  authorKnowsAbout: { type: [String], default: [] },
+  authorAlumniOf: { type: [String], default: [] },
+  /** Verified public profiles only. These become `sameAs`. */
+  authorSameAs: { type: [String], default: [] },
+  authorBio: String,
+
+  /**
+   * Self-contained answers, each tied to a heading.
+   *
+   * Written to be lifted whole and quoted. Bounded at 40-60 words: shorter
+   * usually drops the qualifier that makes the answer true, longer gets
+   * truncated mid-thought by whatever quotes it.
+   */
+  answerCapsules: {
+    type: [{ question: String, answer: String }],
+    default: [],
+  },
+
+  /**
+   * What this article knows that others do not — a benchmark we ran, a data set
+   * we hold, an incident we handled. Recorded because an article with nothing
+   * original in it is a summary of other people's work, and both readers and
+   * ranking systems eventually notice.
+   */
+  informationGainSource: String,
+
+  /**
+   * Editorial verification.
+   *
+   * `dateReviewed` is deliberately separate from `updatedAt`: fixing a typo is
+   * not a re-examination of whether the advice still holds, and conflating them
+   * is how a stale article convinces everybody it is current.
+   */
+  dateReviewed: { type: Date, default: null },
+  reviewedByName: String,
+  reviewedByTitle: String,
   category: { type: String, default: 'General', index: true },
   tags: { type: [String], default: [], index: true },
 
   featuredImageArtifactId: { type: Schema.Types.ObjectId, default: null },
+  /** Public URL of the featured image, once uploaded. */
+  featuredImageUrl: { type: String, default: null },
+  /**
+   * Makes this article readable while unpublished, for review.
+   *
+   * Deliberately without an expiry: a review link that dies over a weekend is
+   * one somebody works around by publishing early, which is the outcome the
+   * preview exists to prevent. Rotating the token revokes the old link.
+   */
+  previewToken: { type: String, default: null, index: true },
   featuredImageAlt: String,
 
   /* ---- Search and social metadata ---- */

@@ -1176,3 +1176,164 @@ input[type="checkbox"]:checked::after { content: ""; position: absolute; left: 5
 .help-link:hover { color: var(--brand-dark); }
 
 @media (prefers-reduced-motion: reduce) { .help-card:hover { transform: none; } }
+
+/* Blog images, previews and feeds --------------------------------------------- */
+.article-hero { width: 100%; height: auto; border-radius: var(--radius); margin: 0 0 1.75rem; display: block; }
+.featured-preview { width: 100%; height: auto; border-radius: 9px; margin-bottom: .75rem; display: block; border: 1px solid var(--line); }
+/* Loud on purpose: without it somebody sends a draft link to a customer. */
+.preview-banner {
+  background: var(--orange-soft); color: var(--orange);
+  border-left: 3px solid var(--orange); border-radius: 8px;
+  padding: .7rem 1rem; font-size: .88rem; font-weight: 600; margin: 0 0 1.5rem;
+}
+.preview-link {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .78rem;
+  background: var(--canvas); padding: .55rem .7rem; border-radius: 7px;
+  margin: .6rem 0 .3rem; overflow-wrap: anywhere;
+}
+
+/* ---------------------------------------------------------------------------
+   Editorial layer — author credentials, takeaways, figures
+   ---------------------------------------------------------------------------
+   The design brief asked for glassmorphic surfaces and adaptive tokens. The
+   boldness is spent in ONE place: the takeaways capsule. Everything around it
+   stays quiet, because a long-form article is read, not admired, and competing
+   surfaces make it harder to read rather than more impressive.
+   --------------------------------------------------------------------------- */
+
+:root {
+  /* Adaptive tokens. Derived from the product's own green so the blog and the
+     application read as one thing rather than two. */
+  --edit-surface: rgba(255, 255, 255, .72);
+  --edit-border: rgba(20, 34, 31, .09);
+  --edit-glass-blur: 16px;
+  --edit-elevated: rgba(255, 255, 255, .88);
+  --edit-quote: #0b5c46;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --edit-surface: rgba(24, 38, 34, .66);
+    --edit-border: rgba(255, 255, 255, .1);
+    --edit-elevated: rgba(28, 44, 39, .86);
+    --edit-quote: #56c8a4;
+  }
+}
+
+/* Author card ---------------------------------------------------------------- */
+.author-card {
+  display: flex; flex-direction: column; gap: .55rem;
+  padding: 1rem 1.15rem; margin: 1.5rem 0 0;
+  background: var(--edit-surface);
+  backdrop-filter: blur(var(--edit-glass-blur));
+  -webkit-backdrop-filter: blur(var(--edit-glass-blur));
+  border: 1px solid var(--edit-border);
+  border-radius: 14px;
+}
+.author-identity { display: flex; align-items: center; gap: .7rem; }
+.author-identity > div { display: flex; flex-direction: column; gap: .05rem; }
+.author-identity strong { font-size: .96rem; letter-spacing: -.01em; }
+.author-identity .muted { font-size: .82rem; }
+.author-avatar {
+  display: grid; place-items: center; flex: none;
+  width: 40px; height: 40px; border-radius: 50%;
+  background: var(--brand); color: #fff;
+  font-weight: 700; font-size: 1.05rem;
+}
+.author-expertise { margin: 0; font-size: .84rem; color: var(--muted); }
+.author-meta { display: flex; flex-wrap: wrap; gap: .75rem; font-size: .8rem; color: var(--faint); }
+.author-meta span, .author-meta time { display: inline-flex; align-items: center; gap: .3rem; }
+
+/* Claimed only where a review was recorded — see the component comment. */
+.verified-badge { color: var(--brand-dark); font-weight: 600; }
+.stale-badge { color: var(--orange); font-weight: 600; }
+
+.author-links { display: flex; gap: .7rem; margin: 0; font-size: .8rem; }
+.author-links a { color: var(--muted); text-decoration: none; border-bottom: 1px solid var(--line); }
+.author-links a:hover { color: var(--brand-dark); border-color: currentColor; }
+
+/* Takeaways — the signature ---------------------------------------------------
+   Marked visibly as the quotable part of the article. The left rule and the
+   quote glyph say: this is written to be taken away. */
+.takeaways {
+  margin: 2rem 0 2.25rem;
+  padding: 1.25rem 1.4rem;
+  background: var(--edit-elevated);
+  backdrop-filter: blur(var(--edit-glass-blur));
+  -webkit-backdrop-filter: blur(var(--edit-glass-blur));
+  border: 1px solid var(--edit-border);
+  border-left: 3px solid var(--brand);
+  border-radius: 14px;
+}
+.takeaways-label {
+  display: inline-flex; align-items: center; gap: .4rem;
+  margin: 0 0 .9rem;
+  font-size: .7rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--brand-dark);
+}
+.takeaways dl { margin: 0; display: flex; flex-direction: column; gap: 1rem; }
+.takeaways dt { font-weight: 650; font-size: .97rem; letter-spacing: -.01em; margin-bottom: .3rem; }
+.takeaways dd {
+  margin: 0; position: relative; padding-left: 1.3rem;
+  font-size: .93rem; line-height: 1.65; color: var(--muted);
+}
+.takeaways dd svg { position: absolute; left: 0; top: .28rem; color: var(--edit-quote); opacity: .55; }
+
+/* Sticky on a wide screen, where there is room beside the text. On a phone it
+   would eat the reading area, so it simply scrolls away. */
+@media (min-width: 1100px) {
+  .takeaways { position: sticky; top: 5rem; }
+}
+
+/* Figures --------------------------------------------------------------------- */
+.article-figure { margin: 1.75rem 0; }
+.article-figure picture, .article-figure img { display: block; width: 100%; height: auto; border-radius: 12px; }
+.article-figure figcaption {
+  display: flex; flex-wrap: wrap; gap: .5rem;
+  margin-top: .6rem; font-size: .82rem; line-height: 1.5; color: var(--faint);
+}
+.figure-credit { margin-left: auto; font-style: italic; }
+
+/* What the article is based on ------------------------------------------------- */
+.information-gain {
+  margin: 2.25rem 0 1rem; padding: 1rem 1.2rem;
+  border: 1px dashed var(--line-strong); border-radius: 12px;
+}
+.information-gain p:last-child { margin: .35rem 0 0; font-size: .89rem; line-height: 1.6; color: var(--muted); }
+
+@media (prefers-reduced-motion: reduce) {
+  .takeaways { position: static; }
+}
+
+/* Marketing landing pages ----------------------------------------------------- */
+.landing { max-width: 46rem; margin: 0 auto; padding: clamp(2.5rem, 6vw, 4.5rem) var(--edge); }
+.landing-head { margin-bottom: 2.5rem; }
+.landing-head h1 { font-size: clamp(1.9rem, 4.6vw, 2.9rem); line-height: 1.12; margin: .35rem 0 .8rem; letter-spacing: -.024em; }
+.landing-standfirst { font-size: 1.12rem; line-height: 1.65; color: var(--muted); margin: 0 0 1.6rem; }
+
+.landing-section { margin-bottom: 2.4rem; }
+.landing-section h2 { font-size: 1.35rem; letter-spacing: -.018em; margin: 0 0 .7rem; }
+.landing-section > p { font-size: 1.01rem; line-height: 1.72; margin: 0 0 1rem; }
+
+.landing-points { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .6rem; }
+.landing-points li { display: flex; align-items: flex-start; gap: .55rem; font-size: .96rem; line-height: 1.55; }
+.landing-points svg { color: var(--brand); flex: none; margin-top: .2rem; }
+
+/* Said on the page rather than discovered after signing up. */
+.landing-caveat {
+  background: var(--orange-soft); color: var(--orange);
+  border-left: 3px solid var(--orange); border-radius: 8px;
+  padding: .85rem 1.1rem; font-size: .92rem; line-height: 1.6; margin: 0 0 2.4rem;
+}
+
+/* Editorial guidance ---------------------------------------------------------- */
+.guidance-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .7rem; }
+.guidance-list li { display: flex; gap: .5rem; align-items: flex-start; font-size: .88rem; }
+.guidance-list li > div { display: flex; flex-direction: column; gap: .15rem; }
+.guidance-list li strong { font-weight: 600; }
+.guidance-list li span { color: var(--muted); line-height: 1.5; }
+.guidance-list .met { color: var(--brand-dark); }
+.guidance-list .met strong { color: var(--ink); }
+.guidance-list .met svg { color: var(--brand); flex: none; margin-top: .15rem; }
+/* Unmet is a prompt, not an error: the editor may have a good reason. */
+.guidance-list .unmet svg { color: var(--orange); flex: none; margin-top: .15rem; }

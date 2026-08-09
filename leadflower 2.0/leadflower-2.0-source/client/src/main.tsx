@@ -22,6 +22,7 @@ const WorkflowsPage = React.lazy(() => import('./pages/WorkflowsPage'))
 const ConsolePage = React.lazy(() => import('./pages/ConsolePage'))
 const OnboardingWizardPage = React.lazy(() => import('./pages/OnboardingWizardPage'))
 const VoiceAgentEditorPage = React.lazy(() => import('./pages/VoiceAgentEditorPage'))
+const MarketingLandingPage = React.lazy(() => import('./pages/MarketingPage'))
 const BlogIndexPage = React.lazy(() => import('./pages/BlogPage').then((module) => ({ default: module.BlogIndexPage })))
 const BlogArticlePage = React.lazy(() => import('./pages/BlogPage'))
 const ContentListPage = React.lazy(() => import('./pages/ContentAdminPage').then((module) => ({ default: module.ContentListPage })))
@@ -72,6 +73,9 @@ const router = createBrowserRouter([
   // Genuinely public: a booking link must open for anyone, including somebody
   // who happens to be signed in to their own workspace.
   { path: '/book/:slug', element: <PublicBookingPage /> },
+  { path: '/features/:slug', element: <MarketingLandingPage /> },
+  { path: '/compare/:slug', element: <MarketingLandingPage /> },
+  { path: '/solutions/:slug', element: <MarketingLandingPage /> },
   { path: '/blog', element: <BlogIndexPage /> },
   { path: '/blog/:slug', element: <BlogArticlePage /> },
   { element: <PublicOnlyRoute />, children: [

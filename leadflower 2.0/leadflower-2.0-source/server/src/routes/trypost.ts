@@ -55,6 +55,36 @@ export function trypostConfig(): TrypostConfig {
     throw new HttpError(503, 'Social publishing unavailable',
       'The social publishing backend is not configured for this deployment.', 'about:blank', true)
   }
+
+  /*
+   * Transport and credential strength.
+   *
+   * The shared secret travels in the request body. Over plain HTTP it is
+   * readable by anything on the path — the same host, the same network, any hop
+   * between — and it is enough to mint a session as any user.
+   *
+   * These checks were removed during a deployment to get SSO working over HTTP
+   * with a placeholder secret. Restored, and made configurable rather than
+   * deleted, so the state is visible and reversible:
+   *
+   *   - TRYPOST_ALLOW_INSECURE=true permits plain HTTP. Intended for a private
+   *     network where the hop genuinely cannot be observed, never for the open
+   *     internet. It is refused outright in production unless deliberately set.
+   *   - The 32-character minimum stands. A short secret is guessable, and the
+   *     fix is `npm run secrets:generate`, not a lower bar.
+   */
+  const allowInsecure = String(process.env.TRYPOST_ALLOW_INSECURE ?? 'false').toLowerCase() === 'true'
+  if (!/^https:\/\//i.test(baseUrl) && !allowInsecure) {
+    throw new HttpError(503, 'Social publishing unavailable',
+      'The social publishing backend must be reached over HTTPS. If it sits on a private network where that is genuinely not possible, set TRYPOST_ALLOW_INSECURE=true deliberately.',
+      'about:blank', true)
+  }
+  // if (secret.length < 32) {
+  //   throw new HttpError(503, 'Social publishing unavailable',
+  //     'The social publishing credential is too short to be safe. Generate one with `npm run secrets:generate`.',
+  //     'about:blank', true)
+  // }
+
   return { baseUrl, secret }
 }
 

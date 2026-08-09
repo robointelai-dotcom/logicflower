@@ -5,7 +5,8 @@ import UsageCounter, { QuotaMetric, quotaMetrics } from '../models/UsageCounter'
 import UsageRecord from '../models/UsageRecord'
 import { evaluateUsageThresholds, overageCents, overageUnits } from './usageAlerts'
 import { packageForSubscription, resolveLimits } from './packages'
-import { PLAN_LIMITS, subscriptionPlans, SubscriptionPlan } from './planLimits'
+// PLAN_LIMITS is re-exported below for existing importers but not used here.
+import { subscriptionPlans, SubscriptionPlan } from './planLimits'
 
 // Re-exported so every existing importer of these names keeps working; they
 // now live in `planLimits.ts` so `packages.ts` can depend on them without a

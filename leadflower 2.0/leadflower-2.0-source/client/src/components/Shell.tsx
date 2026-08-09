@@ -19,30 +19,47 @@ interface NavItem {
   roles?: OrganizationRole[]
 }
 
+/**
+ * Role groups, mirroring the server-side guards.
+ *
+ * The navigation used to grant nearly every item to the same broad set, so a
+ * viewer saw Sequences, Booking, Calling and Workflows and was stopped only
+ * when they tried to act. The server was right and the door was wrong.
+ *
+ * Showing somebody a screen they cannot use is not a security hole — the API
+ * refuses them — but it is a worse experience than not showing it, and it makes
+ * the least-privilege claim untrue at one of the two layers.
+ */
+const EVERYONE: OrganizationRole[] = ['owner', 'admin', 'operator', 'viewer', 'customer']
+/** Can act on the workspace: create, edit, publish, send. */
+const OPERATORS: OrganizationRole[] = ['owner', 'admin', 'operator']
+/** Can change how the workspace is configured or connected. */
+const MANAGERS: OrganizationRole[] = ['owner', 'admin']
+
 const sections: Array<{ label: string; items: NavItem[] }> = [
   { label: 'Engage', items: [
-    { label: 'Today', to: '/dashboard', icon: Sunrise, roles: ['owner', 'admin', 'operator', 'viewer', 'customer'] },
-    { label: 'Inbox', to: '/inbox', icon: Inbox, roles: ['owner', 'admin', 'operator', 'viewer', 'customer'] },
-    { label: 'Contacts', to: '/contacts', icon: Contact2, roles: ['owner', 'admin', 'operator', 'viewer', 'customer'] },
-    { label: 'Pipeline', to: '/pipeline', icon: KanbanSquare, roles: ['owner', 'admin', 'operator', 'viewer', 'customer'] },
-    { label: 'Booking', to: '/booking', icon: CalendarClock, roles: ['owner', 'admin', 'operator', 'viewer', 'customer'] },
-    { label: 'Sequences', to: '/sequences', icon: Send, roles: ['owner', 'admin', 'operator', 'viewer', 'customer'] },
-    { label: 'Social', to: '/social', icon: Megaphone, roles: ['owner', 'admin', 'operator', 'viewer', 'customer'] },
-    { label: 'Auto Post', to: '/trypost', icon: Megaphone, roles: ['owner', 'admin', 'operator', 'viewer', 'customer'] },
-    { label: 'Calling', to: '/voice', icon: PhoneCall, roles: ['owner', 'admin', 'operator'] },
+    { label: 'Today', to: '/dashboard', icon: Sunrise, roles: [...EVERYONE] },
+    { label: 'Inbox', to: '/inbox', icon: Inbox, roles: [...EVERYONE] },
+    { label: 'Contacts', to: '/contacts', icon: Contact2, roles: [...EVERYONE] },
+    { label: 'Pipeline', to: '/pipeline', icon: KanbanSquare, roles: [...EVERYONE] },
+    { label: 'Booking', to: '/booking', icon: CalendarClock, roles: [...OPERATORS] },
+    { label: 'Sequences', to: '/sequences', icon: Send, roles: [...OPERATORS] },
+    { label: 'Social', to: '/social', icon: Megaphone, roles: [...OPERATORS] },
+    { label: 'Auto Post', to: '/trypost', icon: Megaphone, roles: [...OPERATORS] },
+    { label: 'Calling', to: '/voice', icon: PhoneCall, roles: [...OPERATORS] },
   ] },
   { label: 'Operate', items: [
-    { label: 'Platform overview', to: '/platform', icon: LayoutDashboard, roles: ['owner', 'admin', 'operator', 'viewer', 'customer'] },
-    { label: 'Connections', to: '/connections', icon: Plug, roles: ['owner', 'admin', 'operator', 'viewer', 'customer'] },
-    { label: 'Workflows', to: '/workflows', icon: WorkflowIcon, roles: ['owner', 'admin', 'operator', 'viewer', 'customer'] },
-    { label: 'Executions', to: '/executions', icon: Activity, roles: ['owner', 'admin', 'operator', 'viewer', 'customer'] },
-    { label: 'Batch jobs', to: '/batches', icon: Layers3, roles: ['owner', 'admin', 'operator', 'viewer', 'customer'] },
+    { label: 'Platform overview', to: '/platform', icon: LayoutDashboard, roles: [...OPERATORS] },
+    { label: 'Connections', to: '/connections', icon: Plug, roles: [...MANAGERS] },
+    { label: 'Workflows', to: '/workflows', icon: WorkflowIcon, roles: [...OPERATORS] },
+    { label: 'Executions', to: '/executions', icon: Activity, roles: [...OPERATORS] },
+    { label: 'Batch jobs', to: '/batches', icon: Layers3, roles: [...OPERATORS] },
   ] },
   { label: 'Protect', items: [
-    { label: 'Monitoring', to: '/monitoring', icon: HeartPulse, roles: ['owner', 'admin', 'operator', 'viewer', 'customer'] },
-    { label: 'Vault', to: '/vault', icon: Archive, roles: ['owner', 'admin', 'operator', 'viewer', 'customer'] },
-    { label: 'Alerts', to: '/notifications', icon: Bell, roles: ['owner', 'admin', 'operator', 'viewer', 'customer'] },
-    { label: 'Audit log', to: '/audit', icon: ClipboardList, roles: ['owner', 'admin', 'operator', 'viewer', 'customer'] },
+    { label: 'Monitoring', to: '/monitoring', icon: HeartPulse, roles: [...OPERATORS] },
+    { label: 'Vault', to: '/vault', icon: Archive, roles: [...MANAGERS] },
+    { label: 'Alerts', to: '/notifications', icon: Bell, roles: [...OPERATORS] },
+    { label: 'Audit log', to: '/audit', icon: ClipboardList, roles: [...EVERYONE] },
   ] },
   { label: 'Manage', items: [
     { label: 'Reports & usage', to: '/reports', icon: BarChart3, roles: ['owner', 'admin', 'operator', 'viewer', 'billing'] },
@@ -134,7 +151,18 @@ export default function Shell() {
         <div><select id="workspace-select" value={session?.organization?.id ?? ''} onChange={(event) => { void changeOrganization(event) }} disabled={switching || (session?.organizations.length ?? 0) < 2}>
           {(session?.organizations ?? []).map((organization) => <option key={organization.id} value={organization.id}>{organization.name}</option>)}
         </select><ChevronDown size={15} aria-hidden="true" /></div>
-        <span>{role} · {session?.organization?.plan ?? 'Free plan'}</span>
+        {/*
+          The tier is named, not inferred. Somebody who works across a corporate
+          account, an agency and a client workspace in one afternoon needs to
+          know which one they are acting in — and an agency admin sitting inside
+          a client's workspace most of all, because everything they do there is
+          recorded against their name and visible to that client.
+        */}
+        <span>
+          {tier?.corporate ? 'Corporate' : tier?.tier === 'agency' ? 'Agency' : null}
+          {tier?.corporate || tier?.tier === 'agency' ? ' · ' : ''}
+          {role} · {session?.organization?.plan ?? 'Free plan'}
+        </span>
       </div>
       <nav className="sidebar-nav" aria-label="Primary navigation">
         {visibleSections.map((section) => {

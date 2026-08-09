@@ -17,7 +17,9 @@
     "env:check": "ts-node scripts/check-env.ts",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "acceptance": "ts-node scripts/acceptance/runAcceptance.ts",
-    "rotate:rewrap": "ts-node scripts/rotate-keys.ts"
+    "rotate:rewrap": "ts-node scripts/rotate-keys.ts",
+    "seed:tiers": "node dist/scripts/seed-tiers.js",
+    "seed:tiers:dev": "ts-node scripts/seed-tiers.ts"
   },
   "dependencies": {
     "@aws-sdk/client-kms": "^3.1103.0",

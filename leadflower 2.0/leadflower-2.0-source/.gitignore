@@ -22,3 +22,4 @@ trypost.env
 # committed zip or patch of it drifts from the tree and gets edited by mistake.
 *.zip
 *.patch
+seed-accounts.local.txt

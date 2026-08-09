@@ -1,5 +1,5 @@
 import React from 'react'
-import { ArrowLeft, ExternalLink, Globe, Plus } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, Check, Clock, ExternalLink, Eye, Globe, Image as ImageIcon, Plus, Rss } from 'lucide-react'
 import { getOne, send } from '../api/client'
 import { Link, useNavigate, useParams } from '../router'
 import { Alert, Button, Card, EmptyState, Field, Modal, PageHeader, SkeletonRows, StatusBadge } from '../components/ui'
@@ -144,6 +144,10 @@ export function ContentListPage() {
       </form>
     </Card>}
 
+    <Card title="Feeds" subtitle="How aggregators and email digests pick up new articles.">
+      <p className="muted"><Rss size={14} /> <a href="/api/v1/public/content/rss.xml" target="_blank" rel="noopener">rss.xml</a> · <a href="/api/v1/public/content/sitemap.xml" target="_blank" rel="noopener">sitemap.xml</a> · <a href="/api/v1/public/content/robots.txt" target="_blank" rel="noopener">robots.txt</a></p>
+    </Card>
+
     <Card title="Redirects" subtitle="Keep old links working when an address changes.">
       <form className="redirect-add" onSubmit={(event) => {
         event.preventDefault()
@@ -189,8 +193,12 @@ export default function ContentEditorPage() {
   const [post, setPost] = React.useState<any>(null)
   const [loaded, setLoaded] = React.useState(false)
 
-  const query = useApi(async () => postId ? (await getOne<{ post: any }>(`/content/posts/${postId}`)).post : null, [postId])
-  React.useEffect(() => { if (!loaded && !query.loading && query.data) { setPost(query.data); setLoaded(true) } }, [query.loading, query.data, loaded])
+  const [previewUrl, setPreviewUrl] = React.useState<string | null>(null)
+  const [scheduleAt, setScheduleAt] = React.useState('')
+  const query = useApi(async () => postId
+    ? await getOne<{ post: any; guidance: any; freshness: any; wordCount: number }>(`/content/posts/${postId}`)
+    : null, [postId])
+  React.useEffect(() => { if (!loaded && !query.loading && query.data?.post) { setPost(query.data.post); setLoaded(true) } }, [query.loading, query.data, loaded])
 
   const set = (key: string, value: unknown) => setPost((current: any) => ({ ...current, [key]: value }))
 
@@ -198,22 +206,55 @@ export default function ContentEditorPage() {
     await action.run(() => send('patch', `/content/posts/${postId}`, {
       title: post.title, slug: post.slug, excerpt: post.excerpt, body: post.body,
       authorName: post.authorName, authorTitle: post.authorTitle, category: post.category, tags: post.tags,
+      featuredImageAlt: post.featuredImageAlt,
       seoTitle: post.seoTitle, metaDescription: post.metaDescription, canonicalUrl: post.canonicalUrl,
       ogTitle: post.ogTitle, ogDescription: post.ogDescription, noindex: post.noindex,
       targetKeyword: post.targetKeyword, secondaryKeywords: post.secondaryKeywords, searchIntent: post.searchIntent,
+      informationGainSource: post.informationGainSource,
+      dateReviewed: post.dateReviewed, reviewedByName: post.reviewedByName, reviewedByTitle: post.reviewedByTitle,
+      authorBio: post.authorBio, authorKnowsAbout: post.authorKnowsAbout, authorSameAs: post.authorSameAs,
     }), 'Saved.')
   }
 
-  const setStatus = async (status: string) => {
-    const result = await action.run(() => send('post', `/content/posts/${postId}/status`, { status }),
-      status === 'published' ? 'Published.' : 'Updated.')
+  const setStatus = async (status: string, publishAt?: string) => {
+    const result = await action.run(() => send('post', `/content/posts/${postId}/status`, { status, publishAt }),
+      status === 'published' ? 'Published.' : status === 'scheduled' ? 'Scheduled. It will publish itself.' : 'Updated.')
     if (result !== undefined) await query.reload()
+  }
+
+  /**
+   * Upload a featured image.
+   *
+   * Read as base64 in the browser and validated on its bytes by the server —
+   * the content type the browser reports is supplied by whoever chose the file
+   * and is not trusted.
+   */
+  const uploadImage = async (file: File) => {
+    const base64 = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(String(reader.result).split(',')[1] ?? '')
+      reader.onerror = () => reject(new Error('Could not read that file'))
+      reader.readAsDataURL(file)
+    })
+    const result = await action.run(() => send<{ url: string }>('post', `/content/posts/${postId}/image`, {
+      contentBase64: base64, contentType: file.type, alt: post?.featuredImageAlt ?? '',
+    }), 'Image attached.')
+    if (result) await query.reload()
+  }
+
+  const makePreviewLink = async () => {
+    const result = await action.run(() => send<{ url: string }>('post', `/content/posts/${postId}/preview-token`, {}),
+      'Preview link created.')
+    if (result) setPreviewUrl(`${window.location.origin}${result.url}`)
   }
 
   if (access === 'checking') return <SkeletonRows rows={5} columns={2} />
   if (access === 'denied') return <NotForYou />
   if (query.loading && !loaded) return <SkeletonRows rows={5} columns={2} />
   if (!post) return <Alert>{query.error ?? 'Not found.'}</Alert>
+
+  const guidance = query.data?.guidance
+  const freshness = query.data?.freshness
 
   const descriptionLength = String(post.metaDescription ?? '').length
 
@@ -260,12 +301,56 @@ export default function ContentEditorPage() {
             <Field label="Author"><input value={post.authorName ?? ''} onChange={(event) => set('authorName', event.target.value)} /></Field>
             <Field label="Category"><input value={post.category ?? ''} onChange={(event) => set('category', event.target.value)} /></Field>
           </div>
+          <Field label="Tags" hint="Comma separated.">
+            <input value={(post.tags ?? []).join(', ')} onChange={(event) => set('tags', event.target.value.split(',').map((tag: string) => tag.trim()).filter(Boolean))} />
+          </Field>
+
+          {post.status !== 'published' && <>
+            <Field label="Or schedule it" hint="It will publish itself at this time.">
+              <input type="datetime-local" value={scheduleAt} onChange={(event) => setScheduleAt(event.target.value)} />
+            </Field>
+            <Button size="sm" disabled={!scheduleAt} busy={action.loading}
+              onClick={() => { void save().then(() => setStatus('scheduled', new Date(scheduleAt).toISOString())) }}>
+              <Clock size={14} />Schedule
+            </Button>
+          </>}
+        </Card>
+
+        <Card title="Featured image" subtitle="Used as the card preview when the article is shared.">
+          {post.featuredImageUrl
+            ? <img src={post.featuredImageUrl} alt={post.featuredImageAlt ?? ''} className="featured-preview" />
+            : <p className="muted"><ImageIcon size={14} /> None yet.</p>}
+          <Field label="Choose an image" hint="JPEG, PNG, WebP or GIF. SVG is refused — it can carry script.">
+            <input type="file" accept="image/jpeg,image/png,image/webp,image/gif"
+              onChange={(event) => { const file = event.target.files?.[0]; if (file) void uploadImage(file) }} />
+          </Field>
+          <Field label="Describe the image" hint="Read aloud by screen readers, and shown if the image fails to load.">
+            <input value={post.featuredImageAlt ?? ''} onChange={(event) => set('featuredImageAlt', event.target.value)} />
+          </Field>
+        </Card>
+
+        <Card title="Share a draft" subtitle="A link that lets somebody read this before it is published.">
+          <Button size="sm" busy={action.loading} onClick={() => { void makePreviewLink() }}><Eye size={14} />Create preview link</Button>
+          {previewUrl && <>
+            <p className="preview-link">{previewUrl}</p>
+            {/* Rotating revokes any link already handed out. */}
+            <p className="muted">Anyone with this link can read the draft. Creating a new one revokes this.</p>
+          </>}
         </Card>
 
         <Card title="Search" subtitle="How this appears in a result.">
           <Field label="SEO title" hint="Defaults to the article title."><input value={post.seoTitle ?? ''} onChange={(event) => set('seoTitle', event.target.value)} /></Field>
           <Field label="Meta description" hint={`${descriptionLength} characters — around 150 to 160 shows in full.`}>
             <textarea rows={3} value={post.metaDescription ?? ''} onChange={(event) => set('metaDescription', event.target.value)} />
+          </Field>
+          <Field label="Canonical URL" hint="Only if this article was published elsewhere first.">
+            <input value={post.canonicalUrl ?? ''} onChange={(event) => set('canonicalUrl', event.target.value)} />
+          </Field>
+          <Field label="Social title" hint="Shown when shared. Defaults to the SEO title.">
+            <input value={post.ogTitle ?? ''} onChange={(event) => set('ogTitle', event.target.value)} />
+          </Field>
+          <Field label="Social description">
+            <textarea rows={2} value={post.ogDescription ?? ''} onChange={(event) => set('ogDescription', event.target.value)} />
           </Field>
           <label className="toggle-row">
             <input type="checkbox" checked={Boolean(post.noindex)} onChange={(event) => set('noindex', event.target.checked)} />
@@ -278,8 +363,32 @@ export default function ContentEditorPage() {
           never emitted as markup — the meta keywords tag has been ignored by
           search engines for well over a decade.
         */}
+        {/*
+          The intent, made useful. It was previously a label nobody acted on;
+          these are the checks that intent implies. Prompts, not gates —
+          publishing is never blocked on them.
+        */}
+        {guidance && <Card title="For this kind of article" subtitle={guidance.goal}>
+          <ul className="guidance-list">
+            {guidance.checks.map((check: any) => <li key={check.label} className={check.met ? 'met' : 'unmet'}>
+              {check.met ? <Check size={14} /> : <AlertTriangle size={14} />}
+              <div>
+                <strong>{check.label}</strong>
+                {!check.met && <span>{check.advice}</span>}
+              </div>
+            </li>)}
+          </ul>
+        </Card>}
+
+        {freshness?.needsReview && <Alert tone="warning">
+          {freshness.reason} Set a review date once you have checked the advice still holds — editing a typo is not a review.
+        </Alert>}
+
         <Card title="Editorial notes" subtitle="For whoever writes next. Not published anywhere.">
           <Field label="Target keyword"><input value={post.targetKeyword ?? ''} onChange={(event) => set('targetKeyword', event.target.value)} /></Field>
+          <Field label="What this is based on" hint="A benchmark you ran, data you hold, an incident you handled. Not published as markup.">
+            <textarea rows={2} value={post.informationGainSource ?? ''} onChange={(event) => set('informationGainSource', event.target.value)} />
+          </Field>
           <Field label="Search intent">
             <select value={post.searchIntent ?? ''} onChange={(event) => set('searchIntent', event.target.value || null)}>
               <option value="">Not set</option>
@@ -288,6 +397,33 @@ export default function ContentEditorPage() {
               <option value="transactional">Transactional</option>
               <option value="navigational">Navigational</option>
             </select>
+          </Field>
+        </Card>
+
+        <Card title="Editorial review" subtitle="Recorded separately from edits, because fixing a typo is not a review.">
+          <Field label="Last reviewed">
+            <input type="date"
+              value={post.dateReviewed ? String(post.dateReviewed).slice(0, 10) : ''}
+              onChange={(event) => set('dateReviewed', event.target.value || null)} />
+          </Field>
+          <div className="field-row">
+            <Field label="Reviewed by"><input value={post.reviewedByName ?? ''} onChange={(event) => set('reviewedByName', event.target.value)} /></Field>
+            <Field label="Their role"><input value={post.reviewedByTitle ?? ''} onChange={(event) => set('reviewedByTitle', event.target.value)} /></Field>
+          </div>
+          {/* Both are needed, or nothing is claimed. Half a claim is still a
+              claim about editorial process. */}
+          <p className="muted">A name and a date are both required before the article claims it was reviewed.</p>
+        </Card>
+
+        <Card title="Author credentials" subtitle="What makes the byline worth trusting. Becomes the Person entity.">
+          <Field label="Bio"><textarea rows={2} value={post.authorBio ?? ''} onChange={(event) => set('authorBio', event.target.value)} /></Field>
+          <Field label="Writes about" hint="Comma separated.">
+            <input value={(post.authorKnowsAbout ?? []).join(', ')}
+              onChange={(event) => set('authorKnowsAbout', event.target.value.split(',').map((entry: string) => entry.trim()).filter(Boolean))} />
+          </Field>
+          <Field label="Verified profiles" hint="Full URLs, comma separated. Real ones only — these are published as claims.">
+            <input value={(post.authorSameAs ?? []).join(', ')}
+              onChange={(event) => set('authorSameAs', event.target.value.split(',').map((entry: string) => entry.trim()).filter(Boolean))} />
           </Field>
         </Card>
       </aside>

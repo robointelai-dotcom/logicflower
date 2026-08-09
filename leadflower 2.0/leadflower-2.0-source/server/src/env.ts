@@ -143,6 +143,14 @@ const schema = z.object({
   // contacts before a phone rings. Defaults ON, so enabling the dialer without
   // consciously turning this off cannot place a call.
   DIALER_DRY_RUN: boolFromEnv.default(true),
+  /**
+   * Where the built client's index.html lives.
+   *
+   * Read so an article can be served with its metadata already in the head.
+   * Unset simply means article shells fall back to a redirect: the page still
+   * works for a person, and only the crawler metadata is lost.
+   */
+  CLIENT_DIST_PATH: z.string().optional(),
   LOG_LEVEL: z.string().default('info'),
 }).superRefine((value, ctx) => {
   if (value.NODE_ENV === 'production' && !value.COOKIE_SECURE) {

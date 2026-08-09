@@ -7,7 +7,32 @@ function SystemPage({ icon, title, description }: { icon: React.ReactNode; title
   return <div className="system-page"><AppLogo /><span>{icon}</span><h1>{title}</h1><p>{description}</p><div><Link className="button button-primary" to="/"><Home size={16} />Go to overview</Link><button className="button button-secondary" onClick={() => history.back()}><ArrowLeft size={16} />Go back</button></div></div>
 }
 export function ForbiddenPage() { return <SystemPage icon={<LockKeyhole />} title="You don’t have access" description="Your current workspace role does not permit this page. Ask a workspace owner if your responsibilities have changed." /> }
-export function NotFoundPage() { return <SystemPage icon={<SearchX />} title="Page not found" description="The page may have moved, or the link may be incomplete." /> }
+/**
+ * The 404 page.
+ *
+ * nginx serves index.html for every unmatched path, so this page is delivered
+ * with a 200 status — a "soft 404". Google treats those badly: junk URLs get
+ * indexed and dilute the site.
+ *
+ * A real 404 status needs the server to know which paths exist, which means
+ * prerendering or server rendering. Until then this at least tells crawlers not
+ * to index the page, which removes most of the harm.
+ */
+export function NotFoundPage() {
+  React.useEffect(() => {
+    const tag = document.createElement('meta')
+    tag.setAttribute('name', 'robots')
+    tag.setAttribute('content', 'noindex, follow')
+    document.head.appendChild(tag)
+    return () => { tag.remove() }
+  }, [])
+
+  return <SystemPage
+    icon={<SearchX />}
+    title="Page not found"
+    description="The page may have moved, or the link may be incomplete. Try the blog or the help centre."
+  />
+}
 
 const supportEmail = import.meta.env.VITE_SUPPORT_EMAIL || 'support@logicflower.com'
 

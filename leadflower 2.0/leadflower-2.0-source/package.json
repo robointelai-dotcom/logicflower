@@ -18,7 +18,8 @@
     "bootstrap": "npm run bootstrap:dev --prefix server",
     "migrate:tenancy": "npm run migrate:tenancy:dev --prefix server",
     "secrets:generate": "node scripts/generate-secrets.mjs",
-    "lint:security": "eslint . --max-warnings=0"
+    "lint:security": "eslint . --max-warnings=0",
+    "seed:tiers": "npm run seed:tiers:dev --prefix server"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

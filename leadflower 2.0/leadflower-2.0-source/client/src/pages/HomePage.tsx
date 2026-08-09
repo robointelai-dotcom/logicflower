@@ -165,6 +165,10 @@ export default function HomePage() {
         <a href="#savings">Savings</a>
         <a href="#pricing">Pricing</a>
         <a href="#faq">FAQ</a>
+        {/* An in-page anchor list with no route out of it strands the reader.
+            Blog and Help are real destinations and belong here. */}
+        <Link to="/blog">Blog</Link>
+        <Link to="/help">Help</Link>
       </nav>
       <div className="marketing-nav-actions">
         <Link to="/login">Sign in</Link>
@@ -466,6 +470,13 @@ export default function HomePage() {
         <p>Follow-up, CRM, booking and reputation for small businesses.</p>
       </div>
       <nav aria-label="Footer">
+        {/* Internal links are how these pages get crawled at all. */}
+        <Link to="/features/missed-call-text-back">Missed call text back</Link>
+        <Link to="/features/follow-up-automation">Follow-up automation</Link>
+        <Link to="/solutions/crm-for-trades">CRM for trades</Link>
+        <Link to="/compare/logicflower-vs-per-action-pricing">Pricing comparison</Link>
+        <Link to="/blog">Blog</Link>
+        <Link to="/help">Help centre</Link>
         <Link to="/login">Sign in</Link>
         <Link to="/signup">Start free</Link>
         <Link to="/status">System status</Link>

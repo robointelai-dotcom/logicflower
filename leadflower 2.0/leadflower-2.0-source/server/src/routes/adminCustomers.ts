@@ -68,6 +68,7 @@ router.get('/', asyncHandler(async (req, res) => {
     // Escaped: an unescaped user string in a regex is both an injection and a
     // way to pin the database with a catastrophic backtrack.
     const safe = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    // eslint-disable-next-line security/detect-non-literal-regexp -- every metacharacter is escaped above and the input is bounded to 120 characters, so no user string can alter the pattern or build a catastrophic backtrack; this suppression stops being justified if either precondition is removed
     query.$or = [{ name: new RegExp(safe, 'i') }, { slug: new RegExp(safe, 'i') }]
   }
 
