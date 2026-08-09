@@ -1,4 +1,8 @@
-logicflower.com, www.logicflower.com {
+www.logicflower.com {
+    redir https://logicflower.com{uri}
+}
+
+logicflower.com {
     reverse_proxy web:8080
 }
 

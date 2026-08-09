@@ -122,6 +122,7 @@ services:
       context: ./client
       args:
         VITE_API_BASE: /api/v1
+        CANONICAL_ORIGIN: https://logicflower.com
     restart: unless-stopped
     expose:
       - "8080"

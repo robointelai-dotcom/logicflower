@@ -5,6 +5,8 @@ RUN npm ci
 COPY . .
 ARG VITE_API_BASE=/api/v1
 ENV VITE_API_BASE=$VITE_API_BASE
+ARG CANONICAL_ORIGIN
+ENV CANONICAL_ORIGIN=$CANONICAL_ORIGIN
 RUN npm run typecheck && npm run build
 
 FROM nginx:1.27-alpine AS runtime
