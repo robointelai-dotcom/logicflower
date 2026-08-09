@@ -187,6 +187,9 @@ async function main() {
       const parent = seed.parent ? organizations.get(seed.parent) : null
       const created = await Organization.create({
         name: seed.organization,
+        slug: seed.organization.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + crypto.randomBytes(4).toString('hex'),
+        createdBy: new mongoose.Types.ObjectId(),
+        ownerCount: 1,
         kind: seed.kind,
         parentOrganizationId: parent?._id ?? null,
         ...(seed.agencyAccessMode ? { agencyAccessMode: seed.agencyAccessMode } : {}),
