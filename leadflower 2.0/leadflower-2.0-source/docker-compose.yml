@@ -123,8 +123,8 @@ services:
       args:
         VITE_API_BASE: /api/v1
     restart: unless-stopped
-    ports:
-      - "80:8080"
+    expose:
+      - "8080"
     volumes:
       # Publishes the built client for the API to read. The web container is the
       # only writer.
@@ -133,8 +133,23 @@ services:
       api:
         condition: service_healthy
 
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - web
+
 volumes:
   mongo_data:
   redis_data:
   artifact_data:
   client_dist:
+  caddy_data:
+  caddy_config:
