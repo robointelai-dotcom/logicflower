@@ -30,14 +30,15 @@ export default function AgencyConsolePage() {
   const action = useAction()
   const [open, setOpen] = React.useState(false)
   const [name, setName] = React.useState('')
+  const [ownerEmail, setOwnerEmail] = React.useState('')
   const [showQuiet, setShowQuiet] = React.useState(false)
 
   const query = useApi(async () => await getOne<{ agencyOrganizationId: string; clients: ClientRow[] }>('/hierarchy/agency/clients'), [])
 
   const createClient = async (event: React.FormEvent) => {
     event.preventDefault()
-    const result = await action.run(() => send('post', '/hierarchy/agency/clients', { name }), 'Client workspace created.')
-    if (result !== undefined) { setOpen(false); setName(''); await query.reload() }
+    const result = await action.run(() => send('post', '/hierarchy/agency/clients', { name, ownerEmail }), 'Client workspace created.')
+    if (result !== undefined) { setOpen(false); setName(''); setOwnerEmail(''); await query.reload() }
   }
 
   const enter = async (client: ClientRow) => {
@@ -142,6 +143,7 @@ export default function AgencyConsolePage() {
     >
       <form id="client-form" className="form-stack" onSubmit={createClient}>
         <Field label="Business name" required><input value={name} onChange={(event) => setName(event.target.value)} required autoFocus placeholder="Acme Plumbing" /></Field>
+        <Field label="Owner email" hint="They will receive an invitation to sign in." required><input type="email" value={ownerEmail} onChange={(event) => setOwnerEmail(event.target.value)} required placeholder="owner@acme.com" /></Field>
       </form>
     </Modal>
   </>
