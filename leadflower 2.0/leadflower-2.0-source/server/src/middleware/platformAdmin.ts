@@ -15,7 +15,7 @@ export function requirePlatformRole(...roles: Array<'support' | 'admin' | 'owner
 const REQUIRE_CORPORATE_MFA = String(process.env.CORPORATE_MFA_REQUIRED ?? 'true').toLowerCase() !== 'false'
 
 if (!REQUIRE_CORPORATE_MFA) {
-  console.warn('[security] CORPORATE_MFA_REQUIRED=false — platform administration does not require a second factor. A stolen platform password is sufficient to read every tenant and publish to the operator\\'s own domain.')
+  console.warn('[security] CORPORATE_MFA_REQUIRED=false — platform administration does not require a second factor. A stolen platform password is sufficient to read every tenant and publish to the operator\'s own domain.')
 }
 
 export function requireAdminMfa(req: Request, res: Response, next: NextFunction): void {
