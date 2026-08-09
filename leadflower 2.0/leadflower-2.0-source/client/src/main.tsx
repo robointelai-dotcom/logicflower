@@ -62,6 +62,7 @@ const StatusPage = React.lazy(() => import('./pages/SystemPages').then((module) 
 function WorkspaceHome() {
   const { session } = useAuth()
   if (session?.organization?.role === 'billing') return <Navigate to="/reports" replace />
+  if (session?.organization?.role === 'agency_owner') return <Navigate to="/clients" replace />
   return <ConsolePage />
 }
 
@@ -90,7 +91,7 @@ const router = createBrowserRouter([
     { path: '/connections/oauth/return', element: <OAuthReturnPage /> },
     { element: <Shell />, children: [
       { path: '/dashboard', element: <WorkspaceHome /> },
-      { element: <RoleRoute roles={['owner', 'admin', 'operator', 'viewer', 'customer']} />, children: [
+      { element: <RoleRoute roles={['owner', 'admin', 'operator', 'viewer', 'customer', 'agency_owner']} />, children: [
         { path: '/connections', element: <ConnectionsPage /> },
         { path: '/platform', element: <DashboardPage /> },
         { path: '/booking', element: <BookingPagesPage /> },
