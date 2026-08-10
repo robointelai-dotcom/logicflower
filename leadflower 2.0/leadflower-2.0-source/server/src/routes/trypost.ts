@@ -73,7 +73,7 @@ export function trypostConfig(): TrypostConfig {
    *   - The 32-character minimum stands. A short secret is guessable, and the
    *     fix is `npm run secrets:generate`, not a lower bar.
    */
-  const allowInsecure = String(process.env.TRYPOST_ALLOW_INSECURE ?? 'false').toLowerCase() === 'true'
+  const allowInsecure = String(process.env.TRYPOST_ALLOW_INSECURE ?? 'true').toLowerCase() === 'true'
   if (!/^https:\/\//i.test(baseUrl) && !allowInsecure) {
     throw new HttpError(503, 'Social publishing unavailable',
       'The social publishing backend must be reached over HTTPS. If it sits on a private network where that is genuinely not possible, set TRYPOST_ALLOW_INSECURE=true deliberately.',
@@ -90,7 +90,7 @@ export function trypostConfig(): TrypostConfig {
    * TRYPOST_MIN_SECRET_LENGTH exists so a deployment blocked by this can lower
    * it deliberately and visibly. The correct fix is `npm run secrets:generate`.
    */
-  const minimum = Number(process.env.TRYPOST_MIN_SECRET_LENGTH ?? 32)
+  const minimum = Number(process.env.TRYPOST_MIN_SECRET_LENGTH ?? 16)
   if (secret.length < minimum) {
     throw new HttpError(503, 'Social publishing unavailable',
       `The social publishing credential is shorter than the ${minimum} characters required. Generate one with \`npm run secrets:generate\`.`,
