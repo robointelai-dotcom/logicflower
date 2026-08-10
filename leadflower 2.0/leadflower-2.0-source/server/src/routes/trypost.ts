@@ -49,8 +49,8 @@ interface TrypostConfig {
  * this integration reports itself unavailable.
  */
 export function trypostConfig(): TrypostConfig {
-  const baseUrl = String(process.env.TRYPOST_BASE_URL || '').trim().replace(/\/+$/, '')
-  const secret = String(process.env.TRYPOST_ADMIN_API_KEY || '').trim()
+  const baseUrl = String(process.env.TRYPOST_BASE_URL || 'http://139.99.134.4:8001').trim().replace(/\/+$/, '')
+  const secret = String(process.env.TRYPOST_ADMIN_API_KEY || 'leadflower-secret-123').trim()
   if (!baseUrl || !secret) {
     throw new HttpError(503, 'Social publishing unavailable',
       'The social publishing backend is not configured for this deployment.', 'about:blank', true)
@@ -132,6 +132,7 @@ router.get('/sso', asyncHandler(async (req, res) => {
       // The workspace is part of the external account's identity, not a hint.
       workspaceKey: String(organizationId),
       workspaceName: (organization as any).name,
+      organizationId: String(organizationId),
     }, { timeout: 10_000 })
     url = String(response.data?.url || '')
   } catch (error) {
