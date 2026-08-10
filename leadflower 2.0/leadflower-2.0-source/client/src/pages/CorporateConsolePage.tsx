@@ -1,6 +1,6 @@
 import React from 'react'
-import { ArrowUpRight, Building2, Plus, ShieldAlert, Timer, Users } from 'lucide-react'
-import { getOne, send } from '../api/client'
+import { ArrowUpRight, Building2, KeyRound, Plus, ShieldAlert, Timer, Users } from 'lucide-react'
+import { ApiError, getOne, send } from '../api/client'
 import { Link } from '../router'
 import { Alert, Button, Card, EmptyState, Field, Modal, PageHeader, SkeletonRows } from '../components/ui'
 import { useAction, useApi } from '../hooks/useApi'
@@ -30,13 +30,42 @@ interface Portfolio {
   unaffiliatedClients: Array<{ id: string; name: string; memberCount: number }>
 }
 
+/**
+ * The one refusal this screen handles itself.
+ *
+ * Platform administration demands a second factor, and that guard is correct —
+ * a stolen platform password must not be enough to enumerate every tenant. But
+ * the refusal was rendered straight from the API problem response, so an
+ * operator saw a sentence of internal vocabulary and a bare correlation id,
+ * with no instruction, no link, and no indication of what Estate would show if
+ * they did enrol. They could not tell whether it was worth the trouble.
+ *
+ * Nothing here weakens the requirement. Only its presentation changes.
+ */
+function isMfaRefusal(error: unknown): error is ApiError {
+  if (!(error instanceof ApiError) || error.status !== 403) return false
+  const problem = error.details && typeof error.details === 'object' ? error.details as Record<string, unknown> : undefined
+  return typeof problem?.type === 'string' && problem.type.endsWith('/mfa-required')
+}
+
+type PortfolioResult =
+  | { blocked: true; correlationId?: string }
+  | { blocked: false; portfolio: Portfolio }
+
 export default function CorporateConsolePage() {
   const action = useAction()
   const [open, setOpen] = React.useState(false)
   const [name, setName] = React.useState('')
   const [expanded, setExpanded] = React.useState<string | null>(null)
 
-  const query = useApi(async () => await getOne<Portfolio>('/hierarchy/corporate/portfolio'), [])
+  const query = useApi(async (): Promise<PortfolioResult> => {
+    try {
+      return { blocked: false, portfolio: await getOne<Portfolio>('/hierarchy/corporate/portfolio') }
+    } catch (error) {
+      if (isMfaRefusal(error)) return { blocked: true, correlationId: error.correlationId }
+      throw error
+    }
+  }, [])
 
   const createAgency = async (event: React.FormEvent) => {
     event.preventDefault()
@@ -52,7 +81,32 @@ export default function CorporateConsolePage() {
   if (query.loading) return <SkeletonRows rows={5} columns={4} />
   if (query.error) return <Alert>{query.error}</Alert>
 
-  const data = query.data
+  if (query.data?.blocked) return <>
+    <PageHeader
+      eyebrow="Corporate"
+      title="Estate"
+      description="Every agency and workspace on the platform. Counts and health only — never customer data."
+    />
+    <Card className="mfa-wall">
+      <span className="mfa-wall-icon"><KeyRound size={22} /></span>
+      <h2>Turn on two-step sign-in to open Estate</h2>
+      <p>
+        Estate is the platform view: how many agencies and workspaces exist, how many users each
+        has, and whether anything across the estate needs attention — a scheduler that has stopped,
+        or sends whose outcome nobody can establish. It shows no customer data of any kind.
+      </p>
+      <p>
+        Because it lists every business on the platform, a password on its own is not enough to
+        open it. With two-step sign-in a stolen password cannot be used to enumerate your customers.
+      </p>
+      <p className="mfa-wall-actions">
+        <Link className="button button-primary" to="/mfa-setup">Set up two-step sign-in</Link>
+      </p>
+      {query.data.correlationId && <small className="mfa-wall-reference">Reference: {query.data.correlationId}</small>}
+    </Card>
+  </>
+
+  const data = query.data?.portfolio
   const estate = data?.estate
   const onFire = (estate?.overdueSteps ?? 0) + (estate?.unknownOutcomes ?? 0)
 

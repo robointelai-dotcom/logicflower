@@ -66,8 +66,8 @@ export default function AgencyConsolePage() {
       eyebrow="Agency"
       title="Your clients"
       description="Sorted by what needs you, not alphabetically."
-      actions={<Button variant="primary" onClick={() => setOpen(true)}><Plus size={16} />
-    <HelpLink route="/clients" />New client</Button>}
+      actions={<Button variant="primary" onClick={() => setOpen(true)}><Plus size={16} />New client</Button>}
+      help={<HelpLink route="/clients" />}
     />
     {action.error && <Alert onDismiss={action.clear}>{action.error}</Alert>}
     {action.success && <Alert tone="success" onDismiss={action.clear}>{action.success}</Alert>}

@@ -83,4 +83,16 @@ export default tseslint.config(
       '@typescript-eslint/no-require-imports': 'off',
     },
   },
+  {
+    /*
+     * Node scripts that run against COMPILED output in dist/.
+     *
+     * `require()` is correct there — they execute with `node` after a build and
+     * are not part of the TypeScript program. Last in the array because flat
+     * config applies in order: an override placed earlier is undone by the
+     * blocks that follow it.
+     */
+    files: ['server/scripts/*.js'],
+    rules: { '@typescript-eslint/no-require-imports': 'off' },
+  },
 )

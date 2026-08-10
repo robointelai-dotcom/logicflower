@@ -42,6 +42,20 @@ const ContactActivitySchema = new Schema({
   metadata: { type: Schema.Types.Mixed, default: {} },
   actorUserId: String,
   occurredAt: { type: Date, default: Date.now },
+
+  /**
+   * Where this person came from, recorded at first contact.
+   *
+   * Read by the attribution report on a FIRST-TOUCH basis: a customer who
+   * searches, rings, waits a week and then books should be credited to the
+   * search, not to "direct".
+   *
+   * Absent means we do not know — and "do not know" is reported as its own row
+   * rather than folded into any channel.
+   */
+  visibilitySource: { type: String, default: null, index: true },
+  visibilityQuery: String,
+  visibilityLandingPage: String,
 }, { timestamps: true });
 
 ContactActivitySchema.index({ organizationId: 1, contactId: 1, occurredAt: -1 });

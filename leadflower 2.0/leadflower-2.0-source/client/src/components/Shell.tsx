@@ -1,9 +1,9 @@
 import React from 'react'
 import { getOne } from '../api/client'
 import {
-  Activity, Archive, BarChart3, Bell, ChevronDown, ClipboardList, CreditCard, HeartPulse,
-  Building2, CalendarClock, Contact2, Globe, Inbox, KanbanSquare, LayoutDashboard, Layers3, LogOut, Megaphone, Menu, PhoneCall, Plug,
-  Send, Settings, ShieldCheck, Sunrise, UserCog, Users,
+  Activity, Archive, Bell, ChevronDown, ClipboardList, CreditCard, HeartPulse,
+  Building2, CalendarClock, Contact2, Globe, Inbox, KanbanSquare, MessagesSquare, Store, TrendingUp, LayoutDashboard, Layers3, LogOut, Megaphone, Menu, PhoneCall, Plug,
+  Send, Settings, ShieldCheck, Star, Sunrise, UserCog, Users,
   Workflow as WorkflowIcon, X,
   type LucideIcon,
 } from 'lucide-react'
@@ -30,13 +30,40 @@ interface NavItem {
  * refuses them — but it is a worse experience than not showing it, and it makes
  * the least-privilege claim untrue at one of the two layers.
  */
-const EVERYONE: OrganizationRole[] = ['owner', 'admin', 'operator', 'viewer', 'customer']
+export const EVERYONE: OrganizationRole[] = ['owner', 'admin', 'operator', 'viewer', 'customer']
 /** Can act on the workspace: create, edit, publish, send. */
-const OPERATORS: OrganizationRole[] = ['owner', 'admin', 'operator']
+export const OPERATORS: OrganizationRole[] = ['owner', 'admin', 'operator']
 /** Can change how the workspace is configured or connected. */
-const MANAGERS: OrganizationRole[] = ['owner', 'admin']
+export const MANAGERS: OrganizationRole[] = ['owner', 'admin']
 
 const sections: Array<{ label: string; items: NavItem[] }> = [
+  {
+    /*
+     * Deliberately not called "SEO".
+     *
+     * A plumber does not want SEO; he wants to be found. It also keeps the
+     * promise honest — there is no rank tracking in here, and "SEO" would
+     * imply it.
+     *
+     * "My website" carries the possessive because there is already a
+     * corporate-only /website for the marketing site. An agency admin working
+     * across both in one afternoon would otherwise conflate them.
+     */
+    label: 'Getting found',
+    items: [
+      /*
+       * "Where work comes from" pointed at the same attribution report that
+       * Results now leads with, so the two were one screen under two names in
+       * two sections. Results is the one that survives, because plan usage
+       * belongs beside it and this section is about being found rather than
+       * about what the work was worth. The route stays live; only the
+       * duplicate entry is gone.
+       */
+      { label: 'My business', to: '/seo/profile', icon: Store, roles: [...OPERATORS] },
+      { label: 'Questions', to: '/seo/questions', icon: MessagesSquare, roles: [...OPERATORS] },
+      { label: 'My website', to: '/seo/website', icon: Globe, roles: [...OPERATORS] },
+    ],
+  },
   { label: 'Engage', items: [
     { label: 'Today', to: '/dashboard', icon: Sunrise, roles: [...EVERYONE] },
     { label: 'Inbox', to: '/inbox', icon: Inbox, roles: [...EVERYONE] },
@@ -45,6 +72,14 @@ const sections: Array<{ label: string; items: NavItem[] }> = [
     { label: 'Booking', to: '/booking', icon: CalendarClock, roles: [...OPERATORS] },
     { label: 'Sequences', to: '/sequences', icon: Send, roles: [...OPERATORS] },
     { label: 'Social', to: '/social', icon: Megaphone, roles: [...OPERATORS] },
+    /*
+     * Reviews is a separate destination from Social because the two have
+     * opposite availability. Review collection works today; social publishing
+     * cannot work until Meta, LinkedIn, TikTok and Pinterest grant app review,
+     * which is months away and not in our gift. Leaving the half that works at
+     * the bottom of a screen whose top half says nothing works loses it.
+     */
+    { label: 'Reviews', to: '/reviews', icon: Star, roles: [...OPERATORS] },
     { label: 'Auto Post', to: '/trypost', icon: Megaphone, roles: [...OPERATORS] },
     { label: 'Calling', to: '/voice', icon: PhoneCall, roles: [...OPERATORS] },
   ] },
@@ -62,7 +97,7 @@ const sections: Array<{ label: string; items: NavItem[] }> = [
     { label: 'Audit log', to: '/audit', icon: ClipboardList, roles: [...EVERYONE] },
   ] },
   { label: 'Manage', items: [
-    { label: 'Reports & usage', to: '/reports', icon: BarChart3, roles: ['owner', 'admin', 'operator', 'viewer', 'billing'] },
+    { label: 'Results', to: '/reports', icon: TrendingUp, roles: ['owner', 'admin', 'operator', 'viewer', 'billing'] },
     { label: 'Team', to: '/team', icon: Users, roles: ['owner', 'admin'] },
     { label: 'Billing', to: '/billing', icon: CreditCard, roles: ['owner', 'billing'] },
     // Any member can see who from outside can read their data, not admins only.
@@ -70,6 +105,21 @@ const sections: Array<{ label: string; items: NavItem[] }> = [
     { label: 'Settings', to: '/settings', icon: Settings },
   ] },
 ]
+
+/**
+ * Where each role lands after sign-in or a workspace switch.
+ *
+ * A billing user is refused most of this product, and correctly so — a
+ * bookkeeper has no business reading customer conversations. But the role was
+ * defined entirely by refusals: they were bounced from screen to screen until
+ * they happened to find one that opened. Billing is the screen the role exists
+ * for, so it is where they start.
+ */
+function homeRouteForRole(role?: string): string {
+  if (role === 'billing') return '/billing'
+  if (role === 'agency_owner') return '/clients'
+  return '/dashboard'
+}
 
 function initials(value: string): string {
   return value.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase() ?? '').join('') || 'LF'
@@ -111,8 +161,20 @@ export default function Shell() {
    *
    * Built rather than filtered, so a client's navigation contains no hidden
    * items that a stray CSS change could reveal.
+   *
+   * The Operate section — Platform overview, Workflows, Executions, Batch jobs,
+   * and Monitoring alongside it — belongs to the previous product. Shown to a
+   * client it produced two home screens with two disagreeing setup checklists,
+   * and a vocabulary (published workflows, batch jobs, open incidents) that no
+   * local business uses. It is kept for agency and corporate, where a technical
+   * operator recognises the language, and hidden from a client.
+   *
+   * Connections is the one exception, because the email and text setup lives
+   * there and nothing can be sent without it. For a client it moves into Manage
+   * under the name that says what it is for.
    */
   const visibleSections = React.useMemo(() => {
+    const isClient = Boolean(tier) && tier?.tier !== 'agency' && !tier?.corporate
     const extra: Array<{ label: string; items: NavItem[] }> = []
     if (tier?.corporate) {
       extra.push({ label: 'Corporate', items: [
@@ -125,7 +187,24 @@ export default function Shell() {
         { label: 'Clients', to: '/clients', icon: Building2 },
       ] })
     }
-    return [...extra, ...sections]
+    if (!isClient) return [...extra, ...sections]
+
+    const clientSections = sections
+      .filter((section) => section.label !== 'Operate')
+      .map((section) => {
+        if (section.label === 'Protect') {
+          return { ...section, items: section.items.filter((item) => item.to !== '/monitoring') }
+        }
+        if (section.label === 'Manage') {
+          const connections: NavItem = { label: 'How you send', to: '/connections', icon: Plug, roles: [...MANAGERS] }
+          const index = section.items.findIndex((item) => item.to === '/team')
+          const items = [...section.items]
+          items.splice(index < 0 ? items.length : index, 0, connections)
+          return { ...section, items }
+        }
+        return section
+      })
+    return [...extra, ...clientSections]
   }, [tier])
   const [mobileOpen, setMobileOpen] = React.useState(false)
   const [profileOpen, setProfileOpen] = React.useState(false)
@@ -140,7 +219,7 @@ export default function Shell() {
   const changeOrganization = async (event: React.ChangeEvent<HTMLSelectElement>) => {
     const selected = session?.organizations.find((organization) => organization.id === event.target.value)
     setSwitching(true)
-    try { await switchOrganization(event.target.value); navigate(selected?.role === 'billing' ? '/reports' : selected?.role === 'agency_owner' ? '/clients' : '/dashboard') } finally { setSwitching(false) }
+    try { await switchOrganization(event.target.value); navigate(homeRouteForRole(selected?.role)) } finally { setSwitching(false) }
   }
 
   const sidebar = (

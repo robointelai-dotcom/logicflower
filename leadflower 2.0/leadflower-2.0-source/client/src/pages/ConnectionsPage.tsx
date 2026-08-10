@@ -4,6 +4,7 @@ import { useSearchParams } from '../router'
 import { getList, getOne, send } from '../api/client'
 import { useAuth } from '../auth/AuthContext'
 import { Alert, Button, Card, ConfirmDialog, Field, Modal, PageHeader, SkeletonRows, StatusBadge } from '../components/ui'
+import SendingIdentities from '../components/SendingIdentities'
 import { useAction, useApi } from '../hooks/useApi'
 import type { Connection, UnknownRecord } from '../types'
 import { formatDate, titleCase } from '../utils/format'
@@ -139,8 +140,18 @@ export default function ConnectionsPage() {
   const maxOutputTokens = Number(query.data?.aiCatalog.limits.maxOutputTokens ?? 4096)
 
   return <>
-    <PageHeader eyebrow="Platform access" title="Connections" description="Manage approved OAuth and encrypted API credential connections." actions={<Button onClick={() => { void query.reload() }} busy={query.loading}><RefreshCw size={16} />Refresh</Button>} />
+    <PageHeader eyebrow="Sending and integrations" title="How you send" description="Your own email, phone number and payment account — then anything else you already use." actions={<Button onClick={() => { void query.reload() }} busy={query.loading}><RefreshCw size={16} />Refresh</Button>} />
     {action.error && <Alert onDismiss={action.clear}>{action.error}</Alert>}{action.success && <Alert tone="success" onDismiss={action.clear}>{action.success}</Alert>}
+    <SendingIdentities canManage={canManage} />
+    {/*
+      The nine below are the previous product's connector set. They are kept and
+      still work, but they sit under their own heading because none of them is
+      what a local business needs before it can answer an enquiry.
+    */}
+    <header className="section-heading">
+      <h2>More integrations</h2>
+      <p>Connect a CRM, a marketing platform or an AI provider you already pay for. None of these is needed to send a message.</p>
+    </header>
     <Card className="security-note"><ShieldCheck size={21} /><div><strong>Least-privilege connection policy</strong><p>LogicFlower asks only for required scopes. Disconnecting revokes platform access and starts verified credential deletion.</p></div></Card>
     {query.loading && !query.data ? <SkeletonRows rows={5} columns={4} /> : query.error ? <Alert>{query.error}</Alert> : <div className="connection-grid">{(query.data?.catalog ?? defaults).map((provider) => {
       const matches = query.data?.connections.filter((item) => item.platform === provider.platform) ?? []

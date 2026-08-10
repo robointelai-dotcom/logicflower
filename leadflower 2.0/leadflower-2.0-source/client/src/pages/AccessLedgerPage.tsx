@@ -40,7 +40,18 @@ function remaining(expiresAt: string): string {
 
 export default function AccessLedgerPage() {
   const action = useAction()
-  const query = useApi(async () => await getOne<{ requests: AccessRequest[]; note: string }>('/hierarchy/support-access'), [])
+  const query = useApi(async () => await getOne<{ requests: AccessRequest[]; note: string; hasAgency?: boolean; agencyAccessMode?: string }>('/hierarchy/support-access'), [])
+
+  /*
+   * The choice belongs on this screen because this is where the client is
+   * already thinking about who may open their workspace. It existed on the
+   * server and was offered nowhere.
+   */
+  const setAgencyAccessMode = async (mode: string) => {
+    const result = await action.run(() => send('post', '/hierarchy/agency-access-mode', { mode }),
+      mode === 'on_request' ? 'Your agency must now ask each time.' : 'Your agency can now open your workspace without asking.')
+    if (result !== undefined) await query.reload()
+  }
 
   const decide = async (request: AccessRequest, decision: 'approved' | 'rejected') => {
     const result = await action.run(() => send('post', `/hierarchy/support-access/${request.id}/decision`, { decision, hours: 4 }),
@@ -66,8 +77,8 @@ export default function AccessLedgerPage() {
       eyebrow="Privacy"
       title="Who can see your data"
       description="Nobody outside your business can open this workspace unless you allow it, and every approval expires on its own."
+      help={<HelpLink route="/access-ledger" />}
     />
-    <HelpLink route="/access-ledger" />
     {action.error && <Alert onDismiss={action.clear}>{action.error}</Alert>}
     {action.success && <Alert tone="success" onDismiss={action.clear}>{action.success}</Alert>}
 
@@ -109,6 +120,37 @@ export default function AccessLedgerPage() {
         </div>)}
       </div>}
     </Card>
+
+    {query.data?.hasAgency && <Card title="Your agency" subtitle="The company that looks after this workspace for you.">
+      <div className="access-mode">
+        <label className={query.data.agencyAccessMode === 'on_request' ? '' : 'is-chosen'}>
+          <input
+            type="radio"
+            name="agency-access-mode"
+            checked={query.data.agencyAccessMode !== 'on_request'}
+            onChange={() => { void setAgencyAccessMode('standing') }}
+            disabled={action.loading}
+          />
+          <span>
+            <strong>They can open it whenever they need to</strong>
+            <small>Quicker when you want something done. Every visit is still recorded in your audit log.</small>
+          </span>
+        </label>
+        <label className={query.data.agencyAccessMode === 'on_request' ? 'is-chosen' : ''}>
+          <input
+            type="radio"
+            name="agency-access-mode"
+            checked={query.data.agencyAccessMode === 'on_request'}
+            onChange={() => { void setAgencyAccessMode('on_request') }}
+            disabled={action.loading}
+          />
+          <span>
+            <strong>They must ask me each time</strong>
+            <small>Requests appear on this screen for you to allow or decline, and every approval runs out on its own.</small>
+          </span>
+        </label>
+      </div>
+    </Card>}
 
     {past.length > 0 && <Card title="Earlier" subtitle="Kept so you can check what happened and when.">
       <table className="data-table">

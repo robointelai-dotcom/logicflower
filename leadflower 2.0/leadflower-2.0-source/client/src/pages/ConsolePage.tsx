@@ -1,13 +1,14 @@
 import React from 'react'
 import {
   ArrowUpRight, CheckCircle2, Inbox, KanbanSquare, Megaphone, PhoneCall,
-  Send, ShieldAlert, Sparkles, Timer, Users,
+  Send, ShieldAlert, Sparkles, Star, Timer, Users,
 } from 'lucide-react'
 import { getList, getOne } from '../api/client'
 import { Link } from '../router'
 import { useAuth } from '../auth/AuthContext'
 import { Alert, Card, SkeletonRows } from '../components/ui'
 import { useApi } from '../hooks/useApi'
+import { EVERYONE, OPERATORS } from '../components/Shell'
 import type { UnknownRecord } from '../types'
 
 /**
@@ -87,6 +88,17 @@ async function loadConsole(): Promise<Overview> {
 const STRIP_WIDTH = 960
 const stripX = (minute: number) => (minute / 1440) * STRIP_WIDTH
 
+/**
+ * `label` arrives from the server as the internal state name of the calling
+ * policy — for an organisation that has not set its hours, `Default
+ * (unreviewed)`. A plumber does not know what an unreviewed default is, and it
+ * was the first thing on the most-used screen. The state is worth surfacing;
+ * the internal name for it is not.
+ */
+function hoursNotSet(label: string): boolean {
+  return label.toLowerCase().includes('unreviewed')
+}
+
 function DayStrip({ startMinute, endMinute, label }: { startMinute: number; endMinute: number; label: string }) {
   const [nowMinute, setNowMinute] = React.useState(() => {
     const now = new Date()
@@ -108,7 +120,7 @@ function DayStrip({ startMinute, endMinute, label }: { startMinute: number; endM
 
   return <figure className="daystrip">
     <figcaption>
-      <span className="eyebrow">Working hours · {label}</span>
+      <span className="eyebrow">Working hours{hoursNotSet(label) ? '' : ` · ${label}`}</span>
       <span className={open ? 'daystrip-state is-open' : 'daystrip-state is-quiet'}>
         <span className="daystrip-pip" aria-hidden="true" />
         {open ? 'Sending now' : 'Quiet — work is waiting'}
@@ -128,6 +140,11 @@ function DayStrip({ startMinute, endMinute, label }: { startMinute: number; endM
       <line x1={stripX(nowMinute)} y1={2} x2={stripX(nowMinute)} y2={54} className="strip-now" />
       <circle cx={stripX(nowMinute)} cy={2} r={4.5} className="strip-now-dot" />
     </svg>
+
+    <p className="daystrip-note">
+      When we will and will not contact your customers.{' '}
+      {hoursNotSet(label) && <>We have not set your hours yet — <Link to="/settings">set them here</Link>.</>}
+    </p>
   </figure>
 }
 
@@ -145,6 +162,7 @@ function NeedsRow({ icon, label, count, to, stopped = false }: {
 
 export default function ConsolePage() {
   const { session } = useAuth()
+  const role = session?.organization?.role ?? 'viewer'
   const query = useApi(loadConsole, [])
 
   if (query.loading) return <SkeletonRows rows={5} columns={3} />
@@ -230,14 +248,23 @@ export default function ConsolePage() {
     </div>
 
     <nav className="console-tiles" aria-label="Sections">
+      {/*
+        Gated on the same lists the sidebar is built from, imported rather than
+        copied. These tiles were a separate hardcoded array that never received
+        the role filter, so a viewer whose navigation correctly hid Sequences,
+        Social and Calling was offered all three here and could click straight
+        through to a screen the navigation deliberately withheld. Duplicating
+        the lists is what let them drift apart the first time.
+      */}
       {[
-        { to: '/inbox', label: 'Inbox', hint: 'Every reply, one thread per person', icon: <Inbox size={17} /> },
-        { to: '/contacts', label: 'Contacts', hint: 'Everyone you can reach', icon: <Users size={17} /> },
-        { to: '/pipeline', label: 'Pipeline', hint: 'Move work through its stages', icon: <KanbanSquare size={17} /> },
-        { to: '/sequences', label: 'Sequences', hint: 'Follow-up that stops when they reply', icon: <Send size={17} /> },
-        { to: '/social', label: 'Social', hint: 'Post once, then collect reviews', icon: <Megaphone size={17} /> },
-        { to: '/voice', label: 'Calling', hint: 'Checked against every rule before it dials', icon: <PhoneCall size={17} /> },
-      ].map((tile) => <Link key={tile.to} to={tile.to} className="console-tile">
+        { to: '/inbox', label: 'Inbox', hint: 'Every reply, one thread per person', icon: <Inbox size={17} />, roles: EVERYONE },
+        { to: '/contacts', label: 'Contacts', hint: 'Everyone you can reach', icon: <Users size={17} />, roles: EVERYONE },
+        { to: '/pipeline', label: 'Pipeline', hint: 'Move work through its stages', icon: <KanbanSquare size={17} />, roles: EVERYONE },
+        { to: '/sequences', label: 'Sequences', hint: 'Follow-up that stops when they reply', icon: <Send size={17} />, roles: OPERATORS },
+        { to: '/social', label: 'Social', hint: 'Post once, schedule everywhere', icon: <Megaphone size={17} />, roles: OPERATORS },
+        { to: '/reviews', label: 'Reviews', hint: 'Ask for one, then choose what goes on your site', icon: <Star size={17} />, roles: OPERATORS },
+        { to: '/voice', label: 'Calling', hint: 'Checked against every rule before it dials', icon: <PhoneCall size={17} />, roles: OPERATORS },
+      ].filter((tile) => tile.roles.includes(role)).map((tile) => <Link key={tile.to} to={tile.to} className="console-tile">
         <span className="tile-icon">{tile.icon}</span>
         <strong>{tile.label}</strong>
         <span className="muted">{tile.hint}</span>

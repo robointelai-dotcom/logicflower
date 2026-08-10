@@ -25,6 +25,10 @@ const VoiceAgentEditorPage = React.lazy(() => import('./pages/VoiceAgentEditorPa
 const MarketingLandingPage = React.lazy(() => import('./pages/MarketingPage'))
 const BlogIndexPage = React.lazy(() => import('./pages/BlogPage').then((module) => ({ default: module.BlogIndexPage })))
 const BlogArticlePage = React.lazy(() => import('./pages/BlogPage'))
+const VisibilityResultsPage = React.lazy(() => import('./pages/VisibilityResultsPage'))
+const BusinessProfilePage = React.lazy(() => import('./pages/BusinessProfilePage'))
+const QuestionsPage = React.lazy(() => import('./pages/QuestionsPage'))
+const MyWebsitePage = React.lazy(() => import('./pages/MyWebsitePage'))
 const ContentListPage = React.lazy(() => import('./pages/ContentAdminPage').then((module) => ({ default: module.ContentListPage })))
 const ContentEditorPage = React.lazy(() => import('./pages/ContentAdminPage'))
 const AgencyConsolePage = React.lazy(() => import('./pages/AgencyConsolePage'))
@@ -40,6 +44,7 @@ const PipelinePage = React.lazy(() => import('./pages/PipelinePage'))
 const InboxPage = React.lazy(() => import('./pages/InboxPage'))
 const TrypostPage = React.lazy(() => import('./pages/TrypostPage'))
 const SocialPage = React.lazy(() => import('./pages/SocialPage'))
+const ReviewsPage = React.lazy(() => import('./pages/ReviewsPage'))
 const VoicePage = React.lazy(() => import('./pages/VoicePage'))
 const WorkflowBuilderPage = React.lazy(() => import('./pages/WorkflowBuilderPage'))
 const ExecutionsPage = React.lazy(() => import('./pages/ExecutionsPage'))
@@ -61,7 +66,9 @@ const StatusPage = React.lazy(() => import('./pages/SystemPages').then((module) 
 
 function WorkspaceHome() {
   const { session } = useAuth()
-  if (session?.organization?.role === 'billing') return <Navigate to="/reports" replace />
+  // Billing lands on Billing, which is the screen the role exists for, rather
+  // than on Reports, which it reached only after being refused elsewhere.
+  if (session?.organization?.role === 'billing') return <Navigate to="/billing" replace />
   if (session?.organization?.role === 'agency_owner') return <Navigate to="/clients" replace />
   return <ConsolePage />
 }
@@ -98,6 +105,10 @@ const router = createBrowserRouter([
         { path: '/setup', element: <OnboardingWizardPage /> },
         { path: '/clients', element: <AgencyConsolePage /> },
         { path: '/estate', element: <CorporateConsolePage /> },
+        { path: '/seo/results', element: <VisibilityResultsPage /> },
+        { path: '/seo/profile', element: <BusinessProfilePage /> },
+        { path: '/seo/questions', element: <QuestionsPage /> },
+        { path: '/seo/website', element: <MyWebsitePage /> },
         { path: '/website', element: <ContentListPage /> },
         { path: '/website/posts/:id', element: <ContentEditorPage /> },
         { path: '/access-ledger', element: <AccessLedgerPage /> },
@@ -109,6 +120,7 @@ const router = createBrowserRouter([
         { path: '/inbox', element: <InboxPage /> },
         { path: '/trypost', element: <TrypostPage /> },
         { path: '/social', element: <SocialPage /> },
+        { path: '/reviews', element: <ReviewsPage /> },
         { path: '/voice', element: <VoicePage /> },
         { path: '/voice/agents/:id', element: <VoiceAgentEditorPage /> },
         { path: '/workflows', element: <WorkflowsPage /> },

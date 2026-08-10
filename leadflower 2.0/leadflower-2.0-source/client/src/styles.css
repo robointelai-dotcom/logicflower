@@ -110,7 +110,22 @@ input[type="checkbox"]:checked::after { content: ""; position: absolute; left: 5
 .workspace-switcher select:focus { box-shadow: none; }
 .workspace-switcher svg { position: absolute; right: 0; top: 6px; color: #a9bdb6; pointer-events: none; }
 .workspace-switcher > span { display: block; color: #8faaa1; font-size: 10px; text-transform: capitalize; }
-.sidebar-nav { display: grid; gap: 12px; overflow-y: auto; }
+/*
+   The nav list scrolls; the brand, workspace switcher and support card do not.
+
+   `overflow-y: auto` was already set here but had no effect: a grid container
+   in a flex column has `min-height: auto`, so it refuses to shrink below its
+   content and instead pushes the pinned "Setup & support" card past the bottom
+   of the 100vh sidebar, taking the tail of the list with it. An owner has the
+   longest menu, so an owner lost Settings, Team, Billing, Who has access,
+   Audit log and Reports while a viewer — with a shorter list that happened to
+   fit — kept them. It read as though permissions were inverted; the routes
+   worked all along and only the links were unreachable.
+
+   `min-height: 0` is the line that makes `overflow-y` bite.
+*/
+.sidebar-nav { display: grid; gap: 12px; overflow-y: auto; flex: 1 1 auto; min-height: 0; align-content: start; }
+.sidebar-brand, .workspace-switcher, .sidebar-admin, .sidebar-help { flex: none; }
 .nav-section > p { margin: 0 10px 5px; color: #6f9186; font-size: 9px; font-weight: 750; letter-spacing: .1em; text-transform: uppercase; }
 .nav-section a, .sidebar-admin a { display: flex; align-items: center; gap: 10px; min-height: 37px; padding: 0 10px; border-radius: 8px; color: #a9beb7; font-size: 13px; font-weight: 580; }
 .nav-section a:hover, .sidebar-admin a:hover { color: white; background: rgba(255,255,255,.055); }
@@ -149,6 +164,10 @@ input[type="checkbox"]:checked::after { content: ""; position: absolute; left: 5
 .page-header h1 { font-size: 27px; line-height: 1.18; letter-spacing: -.6px; margin-bottom: 5px; }
 .page-header > div > p:not(.eyebrow) { margin: 0; color: var(--muted); font-size: 13px; }
 .page-actions { display: flex; gap: 9px; flex-wrap: wrap; }
+/* The help link gets its own row under the description so it can never share
+   space with the actions column. */
+.page-help { display: block; margin-top: 7px; }
+.page-help .help-link { margin: 0; }
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 19px; box-shadow: var(--shadow); margin-bottom: 18px; }
 .card-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin: -1px 0 17px; }
 .card-header h2 { font-size: 15px; margin: 0 0 2px; }
@@ -436,8 +455,18 @@ input[type="checkbox"]:checked::after { content: ""; position: absolute; left: 5
    --------------------------------------------------------------------------- */
 
 .filter-bar { display: flex; gap: .75rem; align-items: center; flex-wrap: wrap; }
-.search-input { display: flex; align-items: center; gap: .5rem; flex: 1 1 18rem; border: 1px solid var(--border, #d9e1ec); border-radius: 8px; padding: 0 .65rem; }
-.search-input input { border: 0; outline: 0; padding: .55rem 0; width: 100%; background: transparent; }
+/*
+   `.search-input` is defined once, above, with the icon absolutely positioned
+   and matching left padding on the input — the same pattern `.input-icon` uses
+   on the login form.
+
+   A second definition lived here and reset the input to `padding: .55rem 0`
+   while leaving the icon absolute, so the magnifying glass sat on top of the
+   placeholder on every screen using this markup: Contacts, Workflows,
+   Executions, Audit log, Vault, Batch jobs, Admin and the help search. Only
+   the width behaviour this section actually needed is kept.
+*/
+.filter-bar .search-input { flex: 1 1 18rem; }
 
 .chip { display: inline-block; padding: .15rem .5rem; margin: 0 .25rem .25rem 0; border-radius: 999px; font-size: .75rem; background: var(--chip-bg, #eef2f7); }
 .chip-row { display: flex; flex-wrap: wrap; margin-top: .5rem; }
@@ -1337,3 +1366,141 @@ input[type="checkbox"]:checked::after { content: ""; position: absolute; left: 5
 .guidance-list .met svg { color: var(--brand); flex: none; margin-top: .15rem; }
 /* Unmet is a prompt, not an error: the editor may have a good reason. */
 .guidance-list .unmet svg { color: var(--orange); flex: none; margin-top: .15rem; }
+
+/* ---------------------------------------------------------------------------
+   Getting found
+   ---------------------------------------------------------------------------
+   The headline sentence carries this section. Everything else is quiet, because
+   a plumber reading between jobs needs one thing to act on rather than a
+   dashboard to interpret.
+   --------------------------------------------------------------------------- */
+
+.results-headline { margin-bottom: 1rem; }
+.results-lead { margin: 0; font-size: clamp(1.1rem, 2.6vw, 1.5rem); line-height: 1.5; letter-spacing: -.012em; }
+.results-lead strong { color: var(--brand-dark); }
+
+/* "Don't know" is a real row, and reads as context rather than a channel. */
+.row-muted td { color: var(--muted); }
+.row-muted td strong { font-weight: 500; }
+
+.method-note { max-width: 44rem; margin-top: 1.25rem; font-size: .82rem; line-height: 1.6; }
+
+/* Opening hours ---------------------------------------------------------------- */
+.hours-grid { display: flex; flex-direction: column; gap: .45rem; margin-bottom: 1rem; }
+.hours-row {
+  display: grid; grid-template-columns: 6.5rem 5rem 1fr 1fr; gap: .5rem; align-items: center;
+}
+.hours-row > span:first-child { font-size: .9rem; }
+.hours-row .toggle-row { margin: 0; font-size: .82rem; }
+.hours-row input[type="time"]:disabled { opacity: .4; }
+@media (max-width: 640px) {
+  .hours-row { grid-template-columns: 1fr 1fr; }
+  .hours-row > span:first-child { grid-column: 1 / -1; font-weight: 600; }
+}
+
+/* Search result preview — what Google sees, not raw JSON-LD ------------------- */
+.serp-preview {
+  display: flex; flex-direction: column; gap: .18rem;
+  padding: .9rem 1rem; border-radius: 10px; background: var(--canvas);
+}
+.serp-title { color: #1a0dab; font-size: 1.02rem; line-height: 1.3; }
+.serp-url { color: var(--brand-dark); font-size: .78rem; }
+.serp-meta { color: var(--muted); font-size: .84rem; margin-top: .2rem; }
+.serp-credential { color: var(--brand-dark); font-size: .78rem; font-weight: 600; margin-top: .25rem; }
+
+/* Questions --------------------------------------------------------------------- */
+/* The count is the feature: demand, measured, from their own inbox. */
+.question-demand { margin: 0 0 .2rem; font-size: .84rem; color: var(--muted); }
+.question-demand strong { color: var(--brand-dark); }
+.question-text { font-size: 1.08rem; margin: 0 0 .9rem; letter-spacing: -.012em; }
+
+.question-examples { margin-bottom: .9rem; }
+.question-examples summary { cursor: pointer; font-size: .82rem; color: var(--muted); }
+.question-examples ul { margin: .5rem 0 0; padding-left: 1.1rem; font-size: .85rem; line-height: 1.6; color: var(--muted); }
+.question-examples li { margin-bottom: .3rem; }
+
+/* Website connection ---------------------------------------------------------- */
+.connect-steps { list-style: none; counter-reset: step; margin: 0 0 1rem; padding: 0; display: flex; flex-direction: column; gap: 1.1rem; }
+.connect-steps li { display: flex; flex-direction: column; gap: .35rem; padding-left: 2.2rem; position: relative; }
+.connect-steps li::before {
+  counter-increment: step; content: counter(step);
+  position: absolute; left: 0; top: 0;
+  display: grid; place-items: center; width: 24px; height: 24px;
+  border-radius: 50%; background: var(--brand); color: #fff;
+  font-size: .78rem; font-weight: 700;
+}
+.connect-steps .btn-inline { align-self: flex-start; display: inline-flex; align-items: center; gap: .35rem; }
+
+/* Four characters, dash, four — sized to be read aloud over a phone. */
+.pairing-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 1.5rem; font-weight: 700; letter-spacing: .12em;
+  background: var(--canvas); border: 1px dashed var(--line-strong);
+  border-radius: 10px; padding: .7rem 1rem; align-self: flex-start;
+}
+.connect-escape { max-width: 34rem; margin: 0; }
+
+.connected-state { display: flex; align-items: center; gap: .7rem; margin-bottom: 1rem; }
+.connected-state svg { color: var(--brand); flex: none; }
+.connected-state > div { display: flex; flex-direction: column; }
+
+/* ---------------------------------------------------------------------------
+   How you send — the operator's own email, phone number and payment account.
+
+   Sits above the connector grid on Connections. The visual weight is
+   deliberate: this is the one section that must be completed before the
+   product can do anything at all, and the nine legacy connectors below it are
+   optional by comparison.
+   --------------------------------------------------------------------------- */
+
+.section-heading { margin: 4px 0 13px; }
+.section-heading h2 { font-size: 17px; margin: 0 0 3px; letter-spacing: -.2px; }
+.section-heading p { margin: 0; color: var(--muted); font-size: 12px; max-width: 62ch; }
+
+.sending-section { margin-bottom: 26px; }
+.sending-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 15px; margin-bottom: 14px; }
+.sending-card { display: flex; flex-direction: column; gap: 11px; margin-bottom: 0; }
+.sending-card .button { align-self: flex-start; margin-top: auto; }
+.sending-head { display: flex; gap: 10px; align-items: flex-start; }
+.sending-head h3 { font-size: 14px; margin: 0 0 3px; }
+.sending-head p { margin: 0; color: var(--muted); font-size: 11.5px; }
+.sending-icon { width: 36px; height: 36px; flex: none; display: grid; place-items: center; border-radius: 10px; background: var(--brand-soft); color: var(--brand); }
+.sending-empty { margin: 0; color: var(--muted); font-size: 11.5px; }
+.sending-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 7px; }
+.sending-list li { display: flex; align-items: center; gap: 8px; border: 1px solid var(--line); border-radius: 9px; padding: 8px 10px; }
+.sending-list li > div { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.sending-list strong { font-size: 12.5px; }
+.sending-list small { color: var(--muted); font-size: 10.5px; overflow-wrap: anywhere; }
+.sending-tick { color: var(--brand); display: grid; place-items: center; flex: none; }
+
+@media (max-width: 1100px) { .sending-grid { grid-template-columns: 1fr; } }
+
+/* The review widget embed code. Shown once, on creation, so it must be easy to
+   select in full rather than pretty. */
+.embed-snippet { margin: 0; padding: 12px; border-radius: 9px; background: var(--surface-soft, #f4f7f6); border: 1px solid var(--line); overflow-x: auto; font-size: 11px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* A caption under the day strip. It is the one element on Today a first-time
+   user cannot interpret without being told what it is. */
+.daystrip-note { margin: 6px 2px 0; color: var(--muted); font-size: 11.5px; }
+.daystrip-note a { color: var(--brand); font-weight: 650; }
+
+/* The MFA wall on Estate. A refusal that explains itself, offers the way
+   forward, and keeps the correlation id small and at the bottom where a
+   support conversation can still use it. */
+.mfa-wall { max-width: 46rem; }
+.mfa-wall-icon { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 12px; background: var(--brand-soft); color: var(--brand); margin-bottom: 13px; }
+.mfa-wall h2 { font-size: 18px; margin: 0 0 9px; }
+.mfa-wall p { margin: 0 0 11px; color: var(--muted); font-size: 13px; line-height: 1.6; }
+.mfa-wall-actions { margin: 16px 0 0; }
+.mfa-wall-reference { display: block; margin-top: 14px; color: var(--faint); font-size: 10px; }
+
+/* The client's choice over whether their agency must ask each time. Rendered
+   as two full statements rather than a toggle, because the consequence of each
+   is what the person is actually choosing between. */
+.access-mode { display: grid; gap: 9px; }
+.access-mode label { display: flex; gap: 10px; align-items: flex-start; border: 1px solid var(--line); border-radius: 10px; padding: 12px; cursor: pointer; }
+.access-mode label.is-chosen { border-color: var(--brand); background: var(--brand-soft); }
+.access-mode input { width: 17px; height: 17px; min-height: 17px; flex: none; margin-top: 2px; }
+.access-mode span { display: flex; flex-direction: column; gap: 2px; }
+.access-mode strong { font-size: 13px; }
+.access-mode small { color: var(--muted); font-size: 11.5px; line-height: 1.5; }

@@ -387,6 +387,18 @@ router.get('/support-access', asyncHandler(async (req, res) => {
   const rows: any[] = await SupportAccessRequest.find({ organizationId }).sort({ _id: -1 }).limit(50)
     .populate('requestedBy', 'name email').lean()
 
+  /*
+   * The client's own agency-access setting is reported here so the screen that
+   * already answers "who can open this workspace" can also answer "and can my
+   * agency walk in without asking". The write endpoint existed; nothing read
+   * it back, so the choice was unreachable for the person it belongs to.
+   *
+   * `hasAgency` is reported separately: a direct signup has no agency above
+   * them and must not be offered a control over one.
+   */
+  const organization: any = await Organization.findOne({ _id: organizationId })
+    .select('parentOrganizationId agencyAccessMode').lean()
+
   const now = new Date()
   res.json({
     requests: rows.map((row) => ({
@@ -401,6 +413,8 @@ router.get('/support-access', asyncHandler(async (req, res) => {
       lastUsedAt: row.lastUsedAt,
       createdAt: row.createdAt,
     })),
+    hasAgency: Boolean(organization?.parentOrganizationId),
+    agencyAccessMode: String(organization?.agencyAccessMode ?? 'standing'),
     // Stated on the endpoint rather than left to documentation.
     note: 'Support cannot see your data unless you approve a request, and every approval expires automatically. You can withdraw access at any time.',
   })

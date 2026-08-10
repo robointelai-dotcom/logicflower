@@ -173,7 +173,10 @@ export function renderRssFeed(input: {
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>${xml(input.siteTitle || 'Blog')}</title>
-    <link>${xml(`${origin}/blog/`)}</link>
+    <!-- No trailing slash: the sitemap and the prerendered pages both use
+         /blog, and to a search engine /blog and /blog/ are two URLs. A feed
+         advertising the second splits the signal from the first. -->
+    <link>${xml(`${origin}/blog`)}</link>
     <description>${xml(input.siteDescription || '')}</description>
     <atom:link href="${xml(self)}" rel="self" type="application/rss+xml"/>
 ${input.items.map((item) => `    <item>

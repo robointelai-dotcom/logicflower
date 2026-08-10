@@ -36,6 +36,8 @@ import inboxRoutes from './routes/inbox'
 import bookingRoutes, { publicBookingRouter } from './routes/booking'
 import hierarchyRoutes from './routes/hierarchy'
 import contentRoutes, { publicContentRouter } from './routes/content'
+import visibilityRoutes from './routes/visibility'
+import publicSiteRoutes from './routes/publicSite'
 import socialRoutes, { publicReviewRouter } from './routes/social'
 import trypostRoutes from './routes/trypost'
 import voiceRoutes from './routes/voice'
@@ -123,6 +125,11 @@ function mountApi(app: express.Express, prefix: '/api/v1' | '/api'): void {
   app.use(`${prefix}/crm`, authenticate, csrfProtection, requireOrganization, tenantRateLimit, idempotentMutation, operationalViewer, mutationGate(operationalOperator), crmRoutes)
   app.use(`${prefix}/scheduling`, authenticate, csrfProtection, requireOrganization, tenantRateLimit, idempotentMutation, operationalViewer, mutationGate(operationalOperator), schedulingRoutes)
   app.use(`${prefix}/inbox`, authenticate, csrfProtection, requireOrganization, tenantRateLimit, idempotentMutation, operationalViewer, mutationGate(operationalOperator), inboxRoutes)
+  // The customer's own website talks here. Unauthenticated by necessity — a
+  // WordPress plugin has no user session — so every route proves its own token.
+  app.use(`${prefix}/public/site`, publicSiteRoutes)
+  // Per-workspace, unlike /content which is platform-owned.
+  app.use(`${prefix}/visibility`, authenticate, csrfProtection, tenantRateLimit, visibilityRoutes)
   app.use(`${prefix}/content`, authenticate, csrfProtection, tenantRateLimit, contentRoutes)
   // Public marketing content: unauthenticated by necessity, rate limited, and
   // read-only. Writes live on the authenticated router above.

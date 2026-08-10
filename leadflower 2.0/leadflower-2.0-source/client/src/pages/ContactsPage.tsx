@@ -91,8 +91,8 @@ export default function ContactsPage() {
       eyebrow="Micro-CRM"
       title="Contacts"
       description="Everyone this workspace can reach, wherever they came from."
-      actions={canOperate && <Button variant="primary" onClick={() => setOpen(true)}><UserPlus size={16} />
-    <HelpLink route="/contacts" />New contact</Button>}
+      actions={canOperate && <Button variant="primary" onClick={() => setOpen(true)}><UserPlus size={16} />New contact</Button>}
+      help={<HelpLink route="/contacts" />}
     />
     {action.error && <Alert onDismiss={action.clear}>{action.error}</Alert>}
     {action.success && <Alert tone="success" onDismiss={action.clear}>{action.success}</Alert>}

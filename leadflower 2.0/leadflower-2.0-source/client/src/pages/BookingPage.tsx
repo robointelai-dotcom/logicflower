@@ -1,5 +1,5 @@
 import React from 'react'
-import { CalendarClock, Copy, Globe, Plus } from 'lucide-react'
+import { CalendarClock, Copy, Eye, Globe, Plus } from 'lucide-react'
 import { getList, send } from '../api/client'
 import { Alert, Button, Card, EmptyState, Field, Modal, PageHeader, SkeletonRows, StatusBadge } from '../components/ui'
 import { HelpLink } from './HelpPage'
@@ -66,8 +66,8 @@ export default function BookingPagesPage() {
       eyebrow="Scheduling"
       title="Booking pages"
       description="Share a link. People pick a time that is genuinely free, and the confirmation runs through your sequences."
-      actions={canOperate && <Button variant="primary" onClick={() => setOpen(true)}><Plus size={16} />
-    <HelpLink route="/booking" />New booking page</Button>}
+      actions={canOperate && <Button variant="primary" onClick={() => setOpen(true)}><Plus size={16} />New booking page</Button>}
+      help={<HelpLink route="/booking" />}
     />
     {action.error && <Alert onDismiss={action.clear}>{action.error}</Alert>}
     {action.success && <Alert tone="success" onDismiss={action.clear}>{action.success}</Alert>}
@@ -92,6 +92,13 @@ export default function BookingPagesPage() {
               <td className="row-actions">
                 {page.status === 'published'
                   ? <>
+                    {/*
+                      The visitor-facing page already exists and was reachable
+                      by nobody in the admin. The commonest doubt an operator
+                      has here is what the customer actually sees, and opening
+                      it is the whole answer.
+                    */}
+                    <a className="button button-ghost button-sm" href={bookingUrl(page.slug)} target="_blank" rel="noreferrer"><Eye size={14} />See what a customer sees</a>
                     <Button size="sm" variant="ghost" onClick={() => { void navigator.clipboard?.writeText(bookingUrl(page.slug)) }}><Copy size={14} />Copy link</Button>
                     <Button size="sm" variant="ghost" busy={action.loading} onClick={() => { void setStatus(page, 'disabled') }}>Disable</Button>
                   </>

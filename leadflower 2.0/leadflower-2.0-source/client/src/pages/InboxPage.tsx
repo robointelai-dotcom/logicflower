@@ -50,8 +50,8 @@ export default function InboxPage() {
       eyebrow="Unified inbox"
       title="Conversations"
       description="One thread per person across SMS and email. An inbound reply stops every sequence they are in."
+      help={<HelpLink route="/inbox" />}
     />
-    <HelpLink route="/inbox" />
     {action.error && <Alert onDismiss={action.clear}>{action.error}</Alert>}
     {action.success && <Alert tone="success" onDismiss={action.clear}>{action.success}</Alert>}
 

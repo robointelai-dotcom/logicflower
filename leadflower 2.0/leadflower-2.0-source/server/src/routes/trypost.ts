@@ -79,11 +79,23 @@ export function trypostConfig(): TrypostConfig {
       'The social publishing backend must be reached over HTTPS. If it sits on a private network where that is genuinely not possible, set TRYPOST_ALLOW_INSECURE=true deliberately.',
       'about:blank', true)
   }
-  // if (secret.length < 32) {
-  //   throw new HttpError(503, 'Social publishing unavailable',
-  //     'The social publishing credential is too short to be safe. Generate one with `npm run secrets:generate`.',
-  //     'about:blank', true)
-  // }
+  /*
+   * Minimum credential strength.
+   *
+   * Commented out during a deployment so a placeholder secret would work.
+   * Restored as a flag rather than deleted, because commented-out code leaves
+   * no record that the state was meant to be temporary and no way to reverse it
+   * without another commit.
+   *
+   * TRYPOST_MIN_SECRET_LENGTH exists so a deployment blocked by this can lower
+   * it deliberately and visibly. The correct fix is `npm run secrets:generate`.
+   */
+  const minimum = Number(process.env.TRYPOST_MIN_SECRET_LENGTH ?? 32)
+  if (secret.length < minimum) {
+    throw new HttpError(503, 'Social publishing unavailable',
+      `The social publishing credential is shorter than the ${minimum} characters required. Generate one with \`npm run secrets:generate\`.`,
+      'about:blank', true)
+  }
 
   return { baseUrl, secret }
 }

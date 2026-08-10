@@ -1,5 +1,5 @@
 import React from 'react'
-import { AlertTriangle, Pause, Play, Plus, Send } from 'lucide-react'
+import { AlertTriangle, HelpCircle, Pause, Play, Plus, Send } from 'lucide-react'
 import { getList, getOne, send } from '../api/client'
 import { Link } from '../router'
 import { Alert, Button, Card, EmptyState, Field, Modal, PageHeader, SkeletonRows, StatusBadge } from '../components/ui'
@@ -49,8 +49,8 @@ export default function SequencesPage() {
       eyebrow="Follow-up engine"
       title="Sequences"
       description="Multi-step follow-up that waits reliably, respects quiet hours and stops the moment someone replies."
-      actions={canOperate && <Button variant="primary" onClick={() => setOpen(true)}><Plus size={16} />
-    <HelpLink route="/sequences" />New sequence</Button>}
+      actions={canOperate && <Button variant="primary" onClick={() => setOpen(true)}><Plus size={16} />New sequence</Button>}
+      help={<HelpLink route="/sequences" />}
     />
     {action.error && <Alert onDismiss={action.clear}>{action.error}</Alert>}
     {action.success && <Alert tone="success" onDismiss={action.clear}>{action.success}</Alert>}
@@ -65,11 +65,28 @@ export default function SequencesPage() {
       <strong>{health.data!.scheduledSteps.outcomeUnknown} step(s) have an unknown send outcome.</strong> A message may already have been delivered. Resolve each one against the provider before re-sending — these are not failures and must not be retried blindly.
     </Alert>}
 
-    {health.data && <Card title="Scheduler health">
+    {/*
+      Hidden until a sequence exists.
+
+      Five zeros above an empty state that already says there is nothing reads
+      as a fault rather than as an absence, and it arrives before the operator
+      has had any chance to learn what the five counts mean.
+    */}
+    {health.data && Boolean(query.data?.length) && <Card title="Scheduler health">
       <dl className="stat-row">
         <div><dt>Pending</dt><dd>{health.data.scheduledSteps.pending}</dd></div>
         <div><dt>Overdue</dt><dd className={health.data.scheduledSteps.overdue ? 'stat-warn' : ''}>{health.data.scheduledSteps.overdue}</dd></div>
-        <div><dt>Unknown outcome</dt><dd className={health.data.scheduledSteps.outcomeUnknown ? 'stat-warn' : ''}>{health.data.scheduledSteps.outcomeUnknown}</dd></div>
+        <div>
+          {/*
+            The one count an operator must never answer by retrying: the
+            message may already have reached a real person.
+          */}
+          <dt title="We could not establish whether these were delivered. The message may already have arrived, so check with your provider before sending again — never simply retry.">
+            Unknown outcome <HelpCircle size={12} aria-hidden="true" />
+            <span className="sr-only">We could not establish whether these were delivered. The message may already have arrived, so check with your provider before sending again — never simply retry.</span>
+          </dt>
+          <dd className={health.data.scheduledSteps.outcomeUnknown ? 'stat-warn' : ''}>{health.data.scheduledSteps.outcomeUnknown}</dd>
+        </div>
         <div><dt>Failed</dt><dd>{health.data.scheduledSteps.failed}</dd></div>
         <div><dt>Suppressed sends</dt><dd>{health.data.sends.suppressed}</dd></div>
       </dl>

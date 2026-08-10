@@ -70,7 +70,10 @@ async function settings() {
 }
 
 function absoluteUrl(site: any, path: string): string {
-  const origin = String(site?.canonicalDomain || 'https://logicflower.com').replace(/\/$/, '')
+  // The configured origin, never a hardcoded one. A brand URL baked into the
+  // source is wrong on every deployment that is not production — staging emits
+  // production canonicals and the two compete in search results.
+  const origin = String(site?.canonicalDomain || '').replace(/\/$/, '')
   // Add trailing slash for directories (not files like .xml or .txt or .jpg)
   const isFile = path.match(/\.[a-zA-Z0-9]+$/)
   const slashedPath = (!isFile && !path.endsWith('/')) ? `${path}/` : path
@@ -595,11 +598,14 @@ publicContentRouter.get('/rss.xml', publicLimiter, asyncHandler(async (_req, res
   const posts: any[] = await BlogPost.find(livePostFilter()).sort({ publishedAt: -1 }).limit(50)
     .select('title slug excerpt publishedAt authorName category').lean()
   res.type('application/rss+xml')
+  const feedOrigin = String(site.canonicalDomain || '').replace(/\/$/, '')
   res.send(renderRssFeed({
-    siteTitle: 'LogicFlower Blog',
-    siteDescription: 'Practical guidance about lead follow-up, CRM, booking and reputation management.',
-    origin: 'https://logicflower.com',
-    selfHref: 'https://logicflower.com/api/v1/public/content/rss.xml',
+    // Read from site settings so a staging deployment does not advertise itself
+    // as production.
+    siteTitle: site.siteTitle || 'Blog',
+    siteDescription: site.siteDescription || '',
+    origin: feedOrigin,
+    selfHref: `${feedOrigin}/api/v1/public/content/rss.xml`,
     items: posts.map((post) => ({
       title: post.title, slug: post.slug, excerpt: post.excerpt || '',
       publishedAt: post.publishedAt, authorName: post.authorName, category: post.category,

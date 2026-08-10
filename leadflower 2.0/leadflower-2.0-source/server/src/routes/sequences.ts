@@ -303,18 +303,31 @@ router.post('/identities', asyncHandler(async (req, res) => {
   const label = String(req.body?.label || '').trim().slice(0, 120)
   if (!label) throw new HttpError(400, 'Label required', 'A label is required')
 
-  const created: any = await MessagingIdentity.create({
-    organizationId,
-    channel,
-    provider,
-    label,
-    fromAddress: req.body?.fromAddress ? String(req.body.fromAddress).slice(0, 320) : undefined,
-    fromName: req.body?.fromName ? String(req.body.fromName).slice(0, 120) : undefined,
-    replyToAddress: req.body?.replyToAddress ? String(req.body.replyToAddress).slice(0, 320) : undefined,
-    fromNumber: req.body?.fromNumber ? String(req.body.fromNumber).slice(0, 32) : undefined,
-    isDefault: Boolean(req.body?.isDefault),
-    createdBy: req.auth?.userId,
-  })
+  let created: any
+  try {
+    created = await MessagingIdentity.create({
+      organizationId,
+      channel,
+      provider,
+      label,
+      fromAddress: req.body?.fromAddress ? String(req.body.fromAddress).slice(0, 320) : undefined,
+      fromName: req.body?.fromName ? String(req.body.fromName).slice(0, 120) : undefined,
+      replyToAddress: req.body?.replyToAddress ? String(req.body.replyToAddress).slice(0, 320) : undefined,
+      fromNumber: req.body?.fromNumber ? String(req.body.fromNumber).slice(0, 32) : undefined,
+      isDefault: Boolean(req.body?.isDefault),
+      createdBy: req.auth?.userId,
+    })
+  } catch (error: any) {
+    // `{organizationId, channel, label}` is unique. Adding a second identity
+    // under a label already in use surfaced the raw driver error as a 500,
+    // which reads as the product being broken rather than as a name clash the
+    // operator can resolve in a second. Same treatment as a duplicate sequence
+    // name above.
+    if (Number(error?.code) === 11_000) {
+      throw new HttpError(409, 'Name already used', `You already have a ${channel} setup called “${label}”. Give this one a different name.`, problemType('messaging-identity-duplicate-label'))
+    }
+    throw error
+  }
 
   // Credentials are stored in a second, separate write so they are never part
   // of the document creation payload that gets logged or echoed back.

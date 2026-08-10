@@ -58,8 +58,8 @@ export default function VoicePage() {
       title="Calling"
       description="Every call passes suppression, consent, do-not-call and calling-window checks before it is placed."
       actions={canOperate && <Button variant="primary" onClick={() => setOpen(true)}>New agent</Button>}
+      help={<HelpLink route="/voice" />}
     />
-    <HelpLink route="/voice" />
     {action.error && <Alert onDismiss={action.clear}>{action.error}</Alert>}
     {action.success && <Alert tone="success" onDismiss={action.clear}>{action.success}</Alert>}
 
@@ -79,7 +79,15 @@ export default function VoicePage() {
       <dl className="stat-row">
         <div><dt>Window</dt><dd>{clock(policy.window.startMinute)}–{clock(policy.window.endMinute)} local</dd></div>
         <div><dt>Days</dt><dd>{policy.window.permittedWeekdays.map((day) => DAYS[day]).join(', ')}</dd></div>
-        <div><dt>Jurisdiction</dt><dd>{policy.label}</dd></div>
+        {/*
+            The server reports an organisation with no configured policy as
+            `Default (unreviewed)`. On a screen about what is lawful to dial,
+            an unexplained "unreviewed" is the wrong word to leave hanging —
+            it reads as a system fault rather than as an instruction.
+        */}
+        <div><dt>Jurisdiction</dt><dd>{policy.label.toLowerCase().includes('unreviewed')
+          ? 'Not set for your country — take advice before widening these hours'
+          : policy.label}</dd></div>
       </dl>
       {policy.widerThanDefault && !policy.legalReviewRecordedBy && <Alert tone="error">
         <ShieldAlert size={15} /> This window is wider than the conservative default and no legal review is recorded against it. Every call will be blocked until a named reviewer is recorded.

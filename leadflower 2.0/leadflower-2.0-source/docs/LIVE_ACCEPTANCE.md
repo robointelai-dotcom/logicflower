@@ -456,3 +456,168 @@ standing between an agency and somebody else's client.
       publication gets worked around rather than followed.
 - [ ] Recording a review date without a reviewer name claims nothing in the
       structured data, and neither does a name without a date.
+
+## Getting found — business profile, questions, attribution
+
+- [ ] `/seo/*` is reachable by a workspace **operator**, not only a platform
+      admin. Sign in as `ridgeway.operator` and confirm. If it 403s, the
+      corporate gate from `content.ts` has been copied by mistake.
+- [ ] A `viewer` does **not** see the "Getting found" section at all — absent
+      from the DOM, not hidden by a style.
+- [ ] A dentist profile emits `"@type": "Dentist"`, not `LocalBusiness`.
+- [ ] **A credential nobody entered is never emitted.** Save a profile with no
+      registrations and confirm `hasCredential` is absent.
+- [ ] A holiday closure appears in `openingHoursSpecification` with
+      `opens`/`closes` of `00:00`.
+- [ ] Validate the emitted graph at validator.schema.org.
+- [ ] Question clustering finds a question asked twice in different wording, and
+      **ignores one asked only once**.
+- [ ] An answer under 40 or over 60 words is refused on publish.
+- [ ] **The attribution report shows "Don't know" as its own row** and never
+      redistributes it. Confirm the percentages do not sum to 100 when some work
+      is untraced.
+- [ ] A workspace with no won deals shows *"Nothing to show yet"*, **not a
+      column of zeros**.
+- [ ] First-touch attribution survives a 60-day gap between the search and the
+      booking. Last-touch would credit "direct" and is wrong.
+
+## Getting found — website, Search Console, article drafts
+
+### The WordPress plugin — NEVER RUN AGAINST A REAL WORDPRESS
+The PHP in `wordpress-plugin/` was written without a WordPress install or even a
+PHP binary to lint it. **Treat all of it as unverified.** Install on a staging
+site first, never a customer's.
+
+- [ ] The plugin activates on WordPress 5.8 and on the current release.
+- [ ] Pairing succeeds with a valid code, and **fails with the same message**
+      for a wrong code and an expired one.
+- [ ] A code works **once**. Reusing it is refused.
+- [ ] A code expires after 15 minutes.
+- [ ] The business schema appears in `<head>` and validates.
+- [ ] `[logicflower_questions]` renders published questions.
+- [ ] Tapping a `tel:` link records an event — test on a real phone, because
+      `sendBeacon` behaves differently as the page unloads.
+- [ ] **With LogicFlower unreachable, the customer's site still loads normally.**
+      The payload cache must not turn our outage into theirs.
+- [ ] With Yoast or Rank Math installed, the conflict warning appears and the
+      defer option suppresses our schema.
+- [ ] The site token cannot read contacts. Try
+      `GET /api/v1/crm/contacts` with the site token and confirm it fails.
+
+### Search Console
+- [ ] Unconfigured, the connect button explains the deployment is not set up —
+      it does **not** silently show "no traffic".
+- [ ] The authorisation URL requests `offline` access and `prompt=consent`.
+      Without both, no refresh token is issued and the connection dies within
+      the hour.
+- [ ] Only `webmasters.readonly` is requested.
+- [ ] A revoked connection reports an error rather than returning zero rows.
+- [ ] Refresh tokens are encrypted at rest and never returned by any endpoint.
+
+### Article drafts
+- [ ] With no completed work, the brief **refuses** and says so plainly.
+- [ ] After two published articles in a month, further drafts are refused.
+- [ ] A dentist profile requires a named reviewer and a review date; a plumber
+      does not.
+- [ ] Nothing publishes without explicit approval.
+
+---
+
+## Screen and navigation fixes — what only real infrastructure can confirm
+
+Added after the fifteen screen and navigation defects were addressed. Everything
+below passed type-checking, linting and the full test suite, and none of it has
+run against a live database or a real provider.
+
+### How you send — the sending identity screen (Fix 1)
+
+This is the one that matters. The screen posts to `POST /sequences/identities`,
+which encrypts the credential and stores it. Nothing in the test suite proves a
+message then leaves the building.
+
+- [ ] Sign in as `ridgeway.owner`. Connect an SMTP identity against a **real**
+      mail server. The host is resolved and rejected if it points into private
+      or reserved address space, so `localhost` and `127.0.0.1` will be refused
+      — this is correct, and it means a loopback mail catcher cannot be used
+      for this check.
+- [ ] Publish a sequence, activate it, enrol a contact, and confirm a message
+      **actually arrives**. Until this is done the product has never sent
+      anything.
+- [ ] Confirm the message arrives from the operator's address, not the
+      platform's, and that a reply reaches the operator.
+- [ ] Confirm the credential cannot be read back through any endpoint.
+- [ ] Repeat with SendGrid instead of SMTP.
+- [ ] Connect Twilio and confirm a text arrives from the configured number.
+- [ ] Confirm a second organisation cannot decrypt the first organisation's
+      credential — the AAD binds each ciphertext to its own record, and only a
+      live two-tenant test proves it.
+- [ ] Enrol a contact with **no** default identity configured and confirm the
+      send is refused rather than falling back to platform SMTP.
+
+**Known gap.** The payments panel cannot report whether a Stripe key is already
+saved. `POST /crm/payments/credential` exists; nothing exposes
+`payments.linkedAt` or `payments.provider`, so the panel says so plainly rather
+than guessing. Saving again replaces the previous key. Closing this needs a
+small read endpoint on the organisation's payment linkage — deliberately not
+added here, because it was outside the brief.
+
+### Reviews as its own screen (Fix 7)
+
+- [ ] Send a review request to a real contact by email and by text, and confirm
+      it goes out under the operator's own identity and respects quiet hours.
+- [ ] Create a widget, paste the embed snippet into a real page, and confirm
+      only **published** reviews appear.
+- [ ] Confirm the widget honours the minimum rating and the allowed origins.
+
+### The MFA wall on Estate (Fix 8)
+
+- [ ] As `corp.owner` **without** MFA, open `/estate`. The screen should explain
+      what Estate shows and offer enrolment. The guard itself is untouched.
+- [ ] Enrol, then confirm Estate opens.
+- [ ] Confirm the API still refuses platform administration without a second
+      factor — the presentation changed, the requirement did not.
+
+### The agency access choice (Fix 15)
+
+- [ ] As a client owner **with** a parent agency, switch to "they must ask me
+      each time", then confirm from the agency side that opening the workspace
+      is refused and a request appears on the client's ledger.
+- [ ] Switch back to standing access and confirm the agency can enter again.
+- [ ] Confirm a direct signup with no agency is not offered the control at all.
+
+### Layout fixes that need a real browser (Fixes 2, 3, 4)
+
+The test suite cannot see a rendered page.
+
+- [ ] All nine screens with a help link: the link sits below the description and
+      clear of the action button. Check Inbox and Calling especially — they
+      rendered correctly before and must not regress.
+- [ ] Contacts, Workflows, Executions, Audit log, Vault, Batch jobs, Admin and
+      the help search: the placeholder starts clear of the magnifying glass, and
+      typed text does not collide with it.
+- [ ] As `ridgeway.owner` at 1440px **and on a phone**, confirm every navigation
+      item from Today to Settings is reachable, and that the list scrolls
+      independently of the pinned "Setup & support" card.
+- [ ] Compare against `ridgeway.viewer`: the owner must see a superset, never a
+      subset.
+- [ ] All captures to date were 1440px wide. The primary user is on a phone and
+      **no screen in this product has been checked at phone width.**
+
+### Role and tier navigation (Fixes 5, 6, 9)
+
+- [ ] As `ridgeway.viewer`, confirm the Today tiles offer nothing the sidebar
+      hides.
+- [ ] As `ridgeway.owner`, confirm there is one dashboard and one setup
+      checklist, and that "How you send" appears under Manage.
+- [ ] As `alpha.owner` and `corp.owner`, confirm the Operate section is still
+      present.
+- [ ] As `ridgeway.billing`, confirm sign-in lands on Billing and that the
+      screen is useful rather than a refusal.
+
+### Still true, and more important than any of the above
+
+**The platform has never sent a message against a live database.** Every fix in
+this pass is cosmetic or navigational by comparison. The next step is not more
+fixing — it is one real customer through one full cycle: enquiry in, follow-up
+out, reply received, sequence stopped, job won, and the result showing on the
+Results screen.

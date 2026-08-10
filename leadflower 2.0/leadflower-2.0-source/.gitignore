@@ -23,3 +23,6 @@ trypost.env
 *.zip
 *.patch
 seed-accounts.local.txt
+
+screenshots/
+capture-screens.mjs

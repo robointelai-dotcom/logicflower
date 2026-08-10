@@ -4,7 +4,6 @@ import { connectDB } from '../src/db'
 import User from '../src/models/User'
 import Organization from '../src/models/Organization'
 import Membership, { membershipRoles } from '../src/models/Membership'
-import Subscription from '../src/models/Subscription'
 import { hashPassword } from '../src/security/password'
 import mongoose from 'mongoose'
 

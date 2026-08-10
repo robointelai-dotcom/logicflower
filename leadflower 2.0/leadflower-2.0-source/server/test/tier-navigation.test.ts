@@ -101,7 +101,12 @@ describe('trypost SSO transport', () => {
     expect(trypost).toMatch(/\^https/)
   })
 
-  it('keeps the minimum secret length', () => {
-    expect(trypost).toContain('secret.length < 32')
+  it('keeps a minimum secret length, defaulting to 32', () => {
+    // Asserts the behaviour, not the spelling. The bound is configurable via
+    // TRYPOST_MIN_SECRET_LENGTH so a blocked deployment can lower it visibly
+    // rather than somebody commenting the check out again — which has now
+    // happened twice.
+    expect(trypost).toContain('secret.length < minimum')
+    expect(trypost).toMatch(/TRYPOST_MIN_SECRET_LENGTH \?\? 32/)
   })
 })

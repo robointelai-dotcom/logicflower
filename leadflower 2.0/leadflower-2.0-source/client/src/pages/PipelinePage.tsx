@@ -145,10 +145,10 @@ export default function PipelinePage() {
         {pipelines.data && pipelines.data.length > 1 && <select value={pipelineId} onChange={(event) => setPipelineId(event.target.value)} aria-label="Pipeline">
           {pipelines.data.map((pipeline) => <option key={pipeline.id} value={pipeline.id}>{pipeline.name}</option>)}
         </select>}
-        {pipelineId && <Button onClick={openStageEditor}><Settings2 size={15} />
-    <HelpLink route="/pipeline" />Edit stages</Button>}
+        {pipelineId && <Button onClick={openStageEditor}><Settings2 size={15} />Edit stages</Button>}
         {canOperate && <Button variant="primary" disabled={!pipelineId} onClick={() => setOpen(true)}><Plus size={16} />New deal</Button>}
       </>}
+      help={<HelpLink route="/pipeline" />}
     />
     {action.error && <Alert onDismiss={action.clear}>{action.error}</Alert>}
     {action.success && <Alert tone="success" onDismiss={action.clear}>{action.success}</Alert>}

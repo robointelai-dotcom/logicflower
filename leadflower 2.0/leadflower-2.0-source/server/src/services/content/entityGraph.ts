@@ -331,6 +331,251 @@ export function guidanceForIntent(input: {
   }
 }
 
+/* --------------------------------------------------------- business entity */
+
+/**
+ * schema.org subtypes we support, and the plain words an operator recognises.
+ *
+ * Specific beats generic. A dentist emitting a bare `LocalBusiness` loses the
+ * properties that make a dentist findable, and no search engine infers them
+ * from the trading name.
+ */
+export const BUSINESS_TYPES: ReadonlyArray<{ value: string; label: string; group: string }> = Object.freeze([
+  { value: 'Plumber', label: 'Plumber', group: 'Trades' },
+  { value: 'Electrician', label: 'Electrician', group: 'Trades' },
+  { value: 'HVACBusiness', label: 'Heating and cooling', group: 'Trades' },
+  { value: 'RoofingContractor', label: 'Roofer', group: 'Trades' },
+  { value: 'GeneralContractor', label: 'Builder', group: 'Trades' },
+  { value: 'Locksmith', label: 'Locksmith', group: 'Trades' },
+  { value: 'MovingCompany', label: 'Removals', group: 'Trades' },
+  { value: 'HousePainter', label: 'Painter and decorator', group: 'Trades' },
+  { value: 'Dentist', label: 'Dentist', group: 'Health' },
+  { value: 'Physician', label: 'Doctor or clinic', group: 'Health' },
+  { value: 'Optician', label: 'Optician', group: 'Health' },
+  { value: 'Pharmacy', label: 'Pharmacy', group: 'Health' },
+  { value: 'MedicalClinic', label: 'Medical clinic', group: 'Health' },
+  { value: 'VeterinaryCare', label: 'Vet', group: 'Health' },
+  { value: 'HealthAndBeautyBusiness', label: 'Salon or spa', group: 'Personal care' },
+  { value: 'HairSalon', label: 'Hairdresser', group: 'Personal care' },
+  { value: 'DaySpa', label: 'Day spa', group: 'Personal care' },
+  { value: 'LegalService', label: 'Solicitor or legal', group: 'Professional' },
+  { value: 'AccountingService', label: 'Accountant', group: 'Professional' },
+  { value: 'InsuranceAgency', label: 'Insurance', group: 'Professional' },
+  { value: 'RealEstateAgent', label: 'Estate agent', group: 'Professional' },
+  { value: 'Restaurant', label: 'Restaurant or cafe', group: 'Hospitality' },
+  { value: 'Bakery', label: 'Bakery', group: 'Hospitality' },
+  { value: 'AutoRepair', label: 'Garage or MOT', group: 'Motoring' },
+  { value: 'ChildCare', label: 'Childcare or nursery', group: 'Other' },
+  { value: 'LocalBusiness', label: 'Something else', group: 'Other' },
+])
+
+export function isKnownBusinessType(value: string): boolean {
+  return BUSINESS_TYPES.some((entry) => entry.value === value)
+}
+
+export interface OpeningHours {
+  day: string
+  opens?: string
+  closes?: string
+  closed?: boolean
+}
+
+export interface HoursException {
+  date: string
+  closed?: boolean
+  opens?: string
+  closes?: string
+  note?: string
+}
+
+export interface BusinessInput {
+  legalName?: string
+  tradingName?: string
+  businessType?: string
+  url?: string
+  telephone?: string
+  email?: string
+  addressLine1?: string
+  addressLine2?: string
+  city?: string
+  region?: string
+  postalCode?: string
+  country?: string
+  latitude?: number
+  longitude?: number
+  serviceAreaKind?: 'radius' | 'named' | 'none'
+  serviceAreaRadiusKm?: number
+  serviceAreaPlaces?: string[]
+  openingHours?: OpeningHours[]
+  hoursExceptions?: HoursException[]
+  priceRange?: string
+  paymentAccepted?: string[]
+  currenciesAccepted?: string[]
+  languagesSpoken?: string[]
+  credentials?: Array<{ name?: string; issuedBy?: string; identifier?: string; url?: string }>
+  services?: string[]
+  foundingYear?: number
+  aggregateRating?: { ratingValue: number; reviewCount: number }
+  capsules?: AnswerCapsule[]
+}
+
+const DAY_MAP: Record<string, string> = {
+  mon: 'Monday', tue: 'Tuesday', wed: 'Wednesday', thu: 'Thursday',
+  fri: 'Friday', sat: 'Saturday', sun: 'Sunday',
+}
+
+function normaliseDay(day: string): string | null {
+  const key = String(day ?? '').slice(0, 3).toLowerCase()
+  return DAY_MAP[key] ?? null
+}
+
+/**
+ * The business as a connected graph.
+ *
+ * Same conventions as `buildArticleGraph`: one `@graph`, nodes joined by `@id`,
+ * `compact()` to drop empties, and — the rule that matters most — **never emit
+ * a claim the database cannot support**.
+ */
+export function buildBusinessGraph(input: BusinessInput): Record<string, unknown> {
+  const base = String(input.url || '').replace(/\/+$/, '')
+  const ids = {
+    business: `${base}#business`,
+    faq: `${base}#faq`,
+  }
+
+  const name = input.tradingName || input.legalName || ''
+  const type = input.businessType && isKnownBusinessType(input.businessType) ? input.businessType : 'LocalBusiness'
+
+  /*
+   * Regular hours.
+   *
+   * `closed` wins over any times supplied alongside it — an operator who ticks
+   * closed and leaves yesterday's times in the fields means closed.
+   */
+  const hours = (input.openingHours ?? [])
+    .filter((entry) => !entry.closed && entry.opens && entry.closes && normaliseDay(entry.day))
+    .map((entry) => compact({
+      '@type': 'OpeningHoursSpecification',
+      dayOfWeek: normaliseDay(entry.day),
+      opens: entry.opens,
+      closes: entry.closes,
+    }))
+
+  /*
+   * Exceptions — bank holidays and one-off closures.
+   *
+   * Emitted because a business showing "open" on a public holiday produces a
+   * wasted journey and a one-star review, which is the opposite of the point.
+   */
+  const exceptions = (input.hoursExceptions ?? [])
+    .filter((entry) => entry.date)
+    .map((entry) => compact({
+      '@type': 'OpeningHoursSpecification',
+      validFrom: entry.date,
+      validThrough: entry.date,
+      ...(entry.closed
+        ? { opens: '00:00', closes: '00:00' }
+        : { opens: entry.opens, closes: entry.closes }),
+    }))
+
+  /*
+   * Where they work, which is often not where they are. A plumber has a home
+   * address and covers thirty miles; emitting only the address gets that wrong.
+   */
+  let areaServed: unknown
+  if (input.serviceAreaKind === 'named' && input.serviceAreaPlaces?.length) {
+    areaServed = input.serviceAreaPlaces.map((place) => compact({ '@type': 'Place', name: place }))
+  } else if (input.serviceAreaKind === 'radius' && input.serviceAreaRadiusKm && input.latitude && input.longitude) {
+    areaServed = compact({
+      '@type': 'GeoCircle',
+      geoMidpoint: compact({ '@type': 'GeoCoordinates', latitude: input.latitude, longitude: input.longitude }),
+      geoRadius: Math.round(input.serviceAreaRadiusKm * 1000),
+    })
+  }
+
+  const nodes: Array<Record<string, unknown>> = []
+
+  nodes.push(compact({
+    '@type': type,
+    '@id': ids.business,
+    name,
+    legalName: input.legalName && input.legalName !== name ? input.legalName : undefined,
+    url: base || undefined,
+    telephone: input.telephone,
+    email: input.email,
+    address: (input.addressLine1 || input.city) ? compact({
+      '@type': 'PostalAddress',
+      streetAddress: [input.addressLine1, input.addressLine2].filter(Boolean).join(', ') || undefined,
+      addressLocality: input.city,
+      addressRegion: input.region,
+      postalCode: input.postalCode,
+      addressCountry: input.country,
+    }) : undefined,
+    geo: (input.latitude && input.longitude) ? compact({
+      '@type': 'GeoCoordinates', latitude: input.latitude, longitude: input.longitude,
+    }) : undefined,
+    areaServed,
+    openingHoursSpecification: [...hours, ...exceptions],
+    priceRange: input.priceRange,
+    paymentAccepted: input.paymentAccepted,
+    currenciesAccepted: input.currenciesAccepted,
+    knowsLanguage: input.languagesSpoken,
+    foundingDate: input.foundingYear ? String(input.foundingYear) : undefined,
+    /*
+     * Credentials — emitted ONLY where the operator entered them.
+     *
+     * A fabricated professional credential is a false statement about a
+     * regulated trade, not an optimisation. Same rule as `reviewedBy` above.
+     */
+    hasCredential: input.credentials?.length
+      ? input.credentials
+        .filter((credential) => credential.name?.trim())
+        .map((credential) => compact({
+          '@type': 'EducationalOccupationalCredential',
+          name: credential.name,
+          credentialCategory: credential.issuedBy,
+          identifier: credential.identifier,
+          url: credential.url,
+        }))
+      : undefined,
+    makesOffer: input.services?.length
+      ? input.services.map((service) => compact({
+        '@type': 'Offer',
+        itemOffered: compact({ '@type': 'Service', name: service }),
+      }))
+      : undefined,
+    /*
+     * Only real, published ratings. Including hidden or unmoderated reviews in
+     * the average would be a false claim in structured data.
+     */
+    aggregateRating: (input.aggregateRating && input.aggregateRating.reviewCount > 0)
+      ? compact({
+        '@type': 'AggregateRating',
+        ratingValue: Number(input.aggregateRating.ratingValue.toFixed(1)),
+        reviewCount: input.aggregateRating.reviewCount,
+      })
+      : undefined,
+  }))
+
+  // The FAQ is bound to the business by id rather than floating as an unrelated
+  // block, so the questions are understood as being about this business.
+  const capsules = (input.capsules ?? []).filter((capsule) => capsule.question?.trim() && capsule.answer?.trim())
+  if (capsules.length) {
+    nodes.push({
+      '@type': 'FAQPage',
+      '@id': ids.faq,
+      about: { '@id': ids.business },
+      mainEntity: capsules.map((capsule) => ({
+        '@type': 'Question',
+        name: capsule.question,
+        acceptedAnswer: { '@type': 'Answer', text: capsule.answer },
+      })),
+    })
+  }
+
+  return { '@context': 'https://schema.org', '@graph': nodes }
+}
+
 /* ------------------------------------------------------- capsule validation */
 
 export const CAPSULE_MIN_WORDS = 40

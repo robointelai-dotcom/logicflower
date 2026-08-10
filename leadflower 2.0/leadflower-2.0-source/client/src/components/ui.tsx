@@ -40,10 +40,19 @@ export function Card({ children, className = '', title, subtitle, actions }: { c
   )
 }
 
-export function PageHeader({ title, description, eyebrow, actions }: { title: string; description?: string; eyebrow?: string; actions?: React.ReactNode }) {
+/**
+ * `help` is a slot rather than something the caller places itself.
+ *
+ * It was previously passed inside `actions`, which put an anchor inside the
+ * primary button: the link text rendered over the button label and both became
+ * unreadable, on every screen that had both. Giving it its own row under the
+ * description keeps it clear of the actions column by construction, so the
+ * fault cannot be reintroduced by a caller.
+ */
+export function PageHeader({ title, description, eyebrow, actions, help }: { title: string; description?: string; eyebrow?: string; actions?: React.ReactNode; help?: React.ReactNode }) {
   return (
     <header className="page-header">
-      <div>{eyebrow && <p className="eyebrow">{eyebrow}</p>}<h1>{title}</h1>{description && <p>{description}</p>}</div>
+      <div>{eyebrow && <p className="eyebrow">{eyebrow}</p>}<h1>{title}</h1>{description && <p>{description}</p>}{help && <div className="page-help">{help}</div>}</div>
       {actions && <div className="page-actions">{actions}</div>}
     </header>
   )

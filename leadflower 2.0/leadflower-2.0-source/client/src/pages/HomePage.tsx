@@ -167,7 +167,6 @@ export default function HomePage() {
 
   const title = 'Lead Follow-Up CRM for Small Businesses | LogicFlower'
   const description = 'Reply to every lead in seconds with automated SMS and email follow-up, a simple CRM, appointment booking and review collection—without per-action fees.'
-  const keywords = 'crm for small business, automated follow up, appointment booking software, missed call text back, logicflower'
 
   React.useEffect(() => {
     document.title = title
