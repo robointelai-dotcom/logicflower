@@ -34,7 +34,7 @@ use App\Models\User;
  */
 Route::post('/sso/provision', function (Request $request) {
     $expected = (string) env('LEADFLOWER_SSO_SECRET', '');
-    if ($expected === '' || strlen($expected) < 32) {
+    if ($expected === '' || strlen($expected) < 16) {
         // Fail closed. An unconfigured deployment must not authenticate anyone.
         return response()->json(['error' => 'SSO is not configured'], 503);
     }
